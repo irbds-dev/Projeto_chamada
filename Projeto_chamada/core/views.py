@@ -63,6 +63,11 @@ def cadastroAluno(request):
     return render(request, 'cadastroAluno.html', {'alunos': alunos, 'turmas': turmas})
 
 @login_required
+def cadastroTurma(request):
+    turmas = Turma.objects.all().order_by('-data')[:10] # Últimos 10
+    return render(request, 'cadastroTurma.html', {'turmas': turmas})
+
+@login_required
 def controle(request):
     # Adicione esta view para a tela de controle
     chamadas = Chamada.objects.all().order_by('-data')[:50]

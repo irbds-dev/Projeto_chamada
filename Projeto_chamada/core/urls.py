@@ -8,5 +8,6 @@ urlpatterns = [
     path('chamada/<int:pk>/', views.realizar_chamada, name='chamada'),
     path('analises/', views.analises, name='analises'),
     path('cadastroAluno/', views.cadastroAluno, name='cadastroAluno'),
+    path('cadastroTurma/', views.cadastroTurma, name='cadastroTurma'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
 ]
