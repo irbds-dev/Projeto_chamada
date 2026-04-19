@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex justify-center items-center h-[75vh]">
+    <div class="bg-white p-10 rounded-3xl shadow-2xl flex w-full max-w-4xl overflow-hidden">
+        <div class="hidden md:flex w-1/2 bg-[#EAF5EA] items-center justify-center p-8">
+            <div class="text-center">
+                <span class="text-6xl">🎓</span>
+                <h2 class="text-2xl font-bold text-[#1E5BB8] mt-4">Conecta Presença</h2>
+                <p class="text-gray-600">Gestão educacional inteligente e simples.</p>
+            </div>
+        </div>
+        <div class="w-full md:w-1/2 p-8">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">Login Coordenação</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold mb-2">E-mail ou Usuário</label>
+                    <input type="text" name="username" class="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-[#1E5BB8] outline-none transition">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold mb-2">Senha</label>
+                    <input type="password" name="password" class="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-[#1E5BB8] outline-none transition">
+                </div>
+                <button type="submit" class="w-full btn-azul py-3 shadow-lg hover:bg-blue-700 transition">Entrar no Sistema</button>
+            </form>
+            <p class="text-center text-xs text-gray-400 mt-6">Acesso restrito à equipe administrativa.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

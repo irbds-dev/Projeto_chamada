@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex justify-between items-center mb-10">
+    <h1 class="text-3xl font-bold text-gray-800">Painel de Turmas</h1>
+    <input type="text" placeholder="Buscar turma..." class="border p-2 rounded-lg w-64 shadow-sm">
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    {% for turma in turmas %}
+    <a href="{% url 'chamada' turma.id_turma %}" class="card flex flex-col items-center text-center">
+        <div class="bg-green-50 w-16 h-16 rounded-full flex items-center justify-center text-3xl mb-4">🏫</div>
+        <h3 class="text-xl font-bold">{{ turma.nome }}</h3>
+        <p class="text-gray-500">{{ turma.periodo }}</p>
+    </a>
+    {% endfor %}
+</div>
+
+{% if user.is_authenticated %}
+<button class="fixed bottom-10 right-10 btn-azul shadow-2xl hover:scale-105 transition-transform">
+    + Cadastrar Nova Turma
+</button>
+{% endif %}
+{% endblock %}
