@@ -13,7 +13,9 @@
         <input type="date" class="p-2 rounded-lg border border-gray-200">
         <select class="p-2 rounded-lg border border-gray-200">
             <option>Todas as Turmas</option>
-            {% for t in turmas %}<option>{{ t.nome }}</option>{% endfor %}
+            {% for turma in turmas %}
+                <option value="{{ turma.id_turma }}">{{ turma.nome }} - {{ turma.periodo }}</option>
+            {% endfor %}
         </select>
         <select class="p-2 rounded-lg border border-gray-200">
             <option>Status: Todos</option>
@@ -30,24 +32,26 @@
                     <th class="py-4 px-2">Data</th>
                     <th>Aluno</th>
                     <th>Turma</th>
+                    <th>Periodo</th>
                     <th>Status</th>
                     <th>Justificativa</th>
                 </tr>
             </thead>
             <tbody class="text-gray-700">
-                {% for c in chamadas_recentes %}
+                {% for chamada in chamadas %}
                 <tr class="border-b hover:bg-gray-50 transition">
-                    <td class="py-4 px-2">{{ c.data|date:"d/m/Y" }}</td>
-                    <td class="font-medium">{{ c.id_aluno.nome }}</td>
-                    <td>{{ c.id_turma.nome }}</td>
+                    <td class="py-4 px-2">{{ chamada.data|date:"d/m/Y" }}</td>
+                    <td class="font-medium">{{ chamada.id_aluno.nome }}</td>
+                    <td>{{ chamada.id_turma.nome }}</td>
+                    <td>{{ chamada.id_turma.periodo }}</td>
                     <td>
-                        {% if c.presente %}
+                        {% if chamada.presente %}
                         <span class="text-green-600 bg-green-50 px-2 py-1 rounded text-xs font-bold">PRESENTE</span>
                         {% else %}
                         <span class="text-red-600 bg-red-50 px-2 py-1 rounded text-xs font-bold">FALTA</span>
                         {% endif %}
                     </td>
-                    <td class="text-sm italic text-gray-400">{{ c.justificativa|default:"-" }}</td>
+                    <td class="text-sm italic text-gray-400">{{ chamada.justificativa|default:"-" }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

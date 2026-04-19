@@ -69,9 +69,9 @@ def cadastroTurma(request):
 
 @login_required
 def controle(request):
-    # Adicione esta view para a tela de controle
-    chamadas = Chamada.objects.all().order_by('-data')[:50]
-    return render(request, 'controle.html', {'chamadas_recentes': chamadas})
+    chamadas = Chamada.objects.all().order_by('-data')[:5]
+    turmas = Turma.objects.all()
+    return render(request, 'controle.html', {'turmas': turmas, 'chamadas': chamadas})
 
 # 5. TELA DE LOGIN
 def login_view(request):
