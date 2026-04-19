@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex flex-col gap-8">
+    <h1 class="text-3xl font-bold text-[#1E5BB8]">Gestão de Cadastros</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="bg-white p-6 rounded-xl shadow-sm">
+            <h3 class="font-bold mb-4">Novo Aluno</h3>
+            <form class="space-y-4">
+                <input type="text" placeholder="Nome Completo" class="w-full border p-2 rounded">
+                <input type="text" placeholder="CPF" class="w-full border p-2 rounded">
+                <select class="w-full border p-2 rounded">
+                    {% for t in turmas %}
+                    <option value="{{ t.id_turma }}">{{ t.nome }}</option>
+                    {% endfor %}
+                </select>
+                <div class="flex gap-2">
+                    <button class="btn-azul flex-1 py-2">Salvar</button>
+                    <button type="button" class="bg-gray-100 px-4 rounded border border-blue-800 text-blue-800">Importar Excel</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm">
+            <h3 class="font-bold mb-4">Alunos Cadastrados Recentemente</h3>
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left border-b text-gray-400">
+                        <th class="pb-2">Nome</th>
+                        <th class="pb-2">Turma</th>
+                        <th class="pb-2">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for aluno in alunos %}
+                    <tr class="border-b">
+                        <td class="py-2">{{ aluno.nome }}</td>
+                        <td class="py-2">{{ aluno.id_turma.nome }}</td>
+                        <td class="py-2">✏️ 🗑️</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
