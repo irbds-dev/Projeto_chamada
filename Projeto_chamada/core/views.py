@@ -16,8 +16,7 @@ def realizar_chamada(request, pk):
     
     if request.method == 'POST':
         for aluno in alunos:
-            # Pega o status do checkbox (se não marcado, é False)
-            status = request.POST.get(f'aluno_{aluno.id_aluno}') == 'on'
+            status = f'presenca_{aluno.id_aluno}' in request.POST
             justificativa = request.POST.get(f'justificativa_{aluno.id_aluno}', '')
 
             # Salva no seu modelo Chamada
@@ -46,7 +45,7 @@ def analises(request):
     # Exemplo de Alunos em Risco (> 25% de faltas)
     # Esta é uma lógica simplificada para o Dashboard
     alunos_risco = Aluno.objects.annotate(
-        total_faltas=Count('chamada', filter=Q(chamada__present=False))
+        total_faltas=Count('chamada', filter=Q(chamada__presente=False))
     ).filter(total_faltas__gt=5).count()
 
     context = {
@@ -58,10 +57,10 @@ def analises(request):
 
 # 4. TELA DE GESTÃO DE CADASTROS
 @login_required
-def cadastros(request):
+def cadastroAluno(request):
     alunos = Aluno.objects.all().order_by('-data')[:10] # Últimos 10
     turmas = Turma.objects.all()
-    return render(request, 'cadastros.html', {'alunos': alunos, 'turmas': turmas})
+    return render(request, 'cadastroAluno.html', {'alunos': alunos, 'turmas': turmas})
 
 @login_required
 def controle(request):

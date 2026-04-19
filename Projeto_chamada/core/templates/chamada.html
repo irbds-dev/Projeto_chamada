@@ -13,7 +13,7 @@
                 {% for aluno in alunos %}
                 <div class="py-4 flex justify-between items-center">
                     <span class="text-lg text-gray-700">{{ forloop.counter }}. {{ aluno.nome }}</span>
-                    <input type="checkbox" name="presenca_{{ aluno.id }}" class="w-7 h-7 accent-[#1E5BB8]">
+                    <input type="checkbox" name="presenca_{{ aluno.id_aluno }}" class="w-7 h-7 accent-[#1E5BB8]">
                 </div>
                 {% endfor %}
             </div>
