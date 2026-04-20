@@ -9,6 +9,7 @@ urlpatterns = [
     path('cadastroAluno/', views.cadastroAluno, name='cadastroAluno'),
     path('cadastroTurma/', views.cadastroTurma, name='cadastroTurma'),
     path('controle/', views.controle, name='controle'),
+    path('chamada/editar/', views.editarChamada, name='editarChamada'),
     path('login/', views.login_view, name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
 ]

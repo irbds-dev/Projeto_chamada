@@ -21,7 +21,6 @@ import environ
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(
-    # define tipos padrão (opcional)
     DEBUG=(bool, False)
 )
 
@@ -78,17 +77,28 @@ WSGI_APPLICATION = 'Chamada.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": env('DB_NAME'),
+#         "USER": env('DB_USER'),
+#         "PASSWORD": env('DB_PASSWORD'),
+#         "HOST": env('DB_HOST'),
+#         "PORT": env('DB_PORT'),
+#         'OPTIONS': {
+#             'connect_timeout': 5,
+#         }
+#     }
+# }
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env('DB_NAME'),
-        "USER": env('DB_USER'),
-        "PASSWORD": env('DB_PASSWORD'),
-        "HOST": env('DB_HOST'),
-        "PORT": env('DB_PORT'),
-        'OPTIONS': {
-            'connect_timeout': 5,
-        }
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'conecta_presenca',
+        'USER': 'root',
+        'PASSWORD': 'root',
+        'HOST': '127.0.0.1', 
+        'PORT': '5432',
     }
 }
 
