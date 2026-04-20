@@ -8,10 +8,9 @@
                    class="p-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
             
             <select name="turma" class="p-3 border rounded-lg outline-none">
-                <option value="">Todas as Turmas</option>
-                {% for t in turmas %}
-                    <option value="{{ t.id }}" {% if request.GET.turma == t.id|stringformat:"s" %}selected{% endif %}>
-                        {{ t.nome }}
+                {% for turma in turmas %}
+                    <option value="{{ turma.id_turma }}" {% if request.GET.turma == turma.id_turma|stringformat:"s" %}selected{% endif %}>
+                        {{ turma.nome }} - {{ turma.periodo }}
                     </option>
                 {% endfor %}
             </select>
