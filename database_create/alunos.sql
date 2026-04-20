@@ -2,7 +2,9 @@ CREATE TABLE aluno (
     id_aluno SERIAL PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
     cpf VARCHAR(255) NOT NULL,
-    id_turma INT REFERENCES turma(id_turma) ON DELETE SET NULL
+    id_turma INT REFERENCES turma(id_turma) ON DELETE SET null,
+    data TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 INSERT INTO aluno (nome, cpf, id_turma)
