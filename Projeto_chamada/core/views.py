@@ -3,6 +3,10 @@ from .models import Turma, Aluno, Chamada
 from django.utils import timezone
 from django.db.models import Count, Q
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth            import authenticate, login
+from django.contrib                 import messages
+
+from .models                        import Turma, Aluno, Chamada
 
 # 1. TELA DE SELEÇÃO DE TURMAS
 def turmas(request):
@@ -75,6 +79,21 @@ def controle(request):
 
 # 5. TELA DE LOGIN
 def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('turmas')
+
+    if request.method == 'POST':
+        usuario_input = request.POST.get('username')
+        senha_input = request.POST.get('password')
+
+        user = authenticate(request, username=usuario_input, password=senha_input)
+
+        if user is not None:
+            login(request, user)
+            return redirect('turmas')
+        else:
+            messages.error(request, "Usuário ou senha incorretos.")
+    
     return render(request, 'login.html')
 
 # 6. EDITAR CHAMADA
@@ -82,15 +101,11 @@ def login_view(request):
 def editarChamada(request):
     hoje = timezone.now().date()
     turmas = Turma.objects.all()
-    
-    # Captura os filtros
+ 
     nome_filtro = request.GET.get('nome', '')
     turma_filtro = request.GET.get('turma', '')
-
-    # Define se houve uma intenção de pesquisa
     pesquisou = bool(nome_filtro or turma_filtro)
     
-    # Se não pesquisou, retornamos uma QuerySet vazia (.none())
     if pesquisou:
         chamadas = Chamada.objects.filter(data__date=hoje).select_related('id_aluno', 'id_turma')
         
@@ -110,7 +125,6 @@ def editarChamada(request):
         registro.updated_at = timezone.now()
         registro.save()
         
-        # Mantém os filtros após o POST
         return redirect(request.get_full_path())
 
     return render(request, 'editarChamada.html', {
