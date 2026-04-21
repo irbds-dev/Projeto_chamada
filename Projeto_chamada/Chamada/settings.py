@@ -30,6 +30,9 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG=(bool, False)
 
 ALLOWED_HOSTS = ['archlinux.tail0357fc.ts.net', '127.0.0.1']
+CSRF_TRUSTED_ORIGINS = [
+    'https://archlinux.tail0357fc.ts.net',
+]
 
 
 # Application definition
@@ -128,10 +131,10 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = 'pt-br'
 
 TIME_ZONE = 'America/Sao_Paulo'
+USE_TZ = True
 
 USE_I18N = True
 
-USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)

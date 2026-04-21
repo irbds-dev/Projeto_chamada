@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+
 {% block content %}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
     <div class="lg:col-span-2 bg-white p-8 rounded-xl shadow-sm">
@@ -7,28 +8,86 @@
             <p class="text-gray-400 font-medium">Data: {% now "d/m/Y" %}</p>
         </div>
 
+        {% if ja_existe %}
+            <div class="bg-yellow-50 border-l-4 border-red-500 p-4 mb-6">
+                <p class="text-red-700 font-bold italic">Modo de Visualização</p>
+                <p class="text-red-600 text-sm">Atenção!
+                    A chamada para esta turma já foi realizada hoje. 
+                    Somente a coordenação pode fazer alterações na lista
+                </p>
+            </div>
+        {% endif %}
+
         <form method="POST">
             {% csrf_token %}
             <div class="divide-y">
                 {% for aluno in alunos %}
-                <div class="py-4 flex justify-between items-center">
-                    <span class="text-lg text-gray-700">{{ forloop.counter }}. {{ aluno.nome }}</span>
-                    <input type="checkbox" name="presenca_{{ aluno.id_aluno }}" class="w-7 h-7 accent-[#1E5BB8]">
+                <div class="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-gray-400 font-mono">{{ forloop.counter|stringformat:"02d" }}</span>
+                        <span class="text-lg text-gray-700 font-medium">{{ aluno.nome }}</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-6">
+
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs font-bold text-gray-400 uppercase">Presença</label>
+                            <input type="checkbox" 
+                                   name="presenca_{{ aluno.id_aluno }}" 
+                                   class="w-7 h-7 accent-[#1E5BB8] cursor-pointer {% if ja_existe %}opacity-50{% endif %}"
+                                   {% if aluno.status_salvo %}checked{% endif %}
+                                   {% if ja_existe %}disabled{% endif %}>
+                        </div>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
-            <button type="submit" class="w-full btn-azul mt-8 text-lg">FINALIZAR CHAMADA</button>
+
+            <div class="mt-8 flex items-center justify-between border-t pt-6">
+                {% if ja_existe %}
+                    {% if request.user.is_authenticated %}
+                        <a href="{% url 'editarChamada' %}?turma={{ turma.id_turma }}" class="text-[#1E5BB8] font-bold hover:underline flex items-center gap-2">
+                            <span>✏️ Corrigir registros</span>
+                        </a>
+                    {% else %}
+                        <span class="text-gray-400 text-sm italic">Faça login para editar os registros.</span>
+                    {% endif %}
+                {% endif %}
+
+                <button type="submit" 
+                    class="btn-azul px-12 py-4 shadow-lg transition-all {% if ja_existe %}opacity-50 cursor-not-allowed bg-gray-400{% else %}hover:scale-105{% endif %}"
+                    {% if ja_existe %}disabled{% endif %}>
+                    {% if ja_existe %}✅ CHAMADA REALIZADA{% else %}💾 FINALIZAR CHAMADA{% endif %}
+                </button>
+            </div>
         </form>
     </div>
 
     <div class="space-y-6">
-        <div class="kpi-card border-t-4 border-[#58B947] shadow-md">
+        <div class="kpi-card border-t-4 border-[#1E5BB8] shadow-md bg-white p-6 rounded-xl">
             <p class="text-gray-500 uppercase text-xs font-bold mb-1">Total de Alunos</p>
             <h2 class="text-4xl font-bold text-gray-800">{{ alunos.count }}</h2>
         </div>
-        <div class="bg-blue-50 p-6 rounded-xl text-blue-800 text-sm">
-            <strong>Dica:</strong> A chamada só pode ser realizada uma vez por dia. Alterações posteriores devem ser feitas pela coordenação no menu "Controle".
-        </div>
+
+        {% if ja_existe %}
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h3 class="text-sm font-bold text-gray-700 mb-4 uppercase">📊 Status do Dia</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Presentes</span>
+                        <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold">
+                            {{ presentes_count }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Faltosos</span>
+                        <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full font-bold">
+                            {{ faltas_count }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
