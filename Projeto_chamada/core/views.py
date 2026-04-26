@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth            import authenticate, login
 from django.contrib                 import messages
 
+
 # 1. TELA DE SELEÇÃO DE TURMAS
 def turmas(request):
     todas_turmas = Turma.objects.all()
@@ -30,11 +31,9 @@ def realizar_chamada(request, id_turma):
         total_faltosos = 0
 
         for aluno in alunos:
-            # Verifica se o checkbox foi marcado
             esta_presente = f'presenca_{aluno.id_aluno}' in request.POST
             justificativa = request.POST.get(f'justificativa_{aluno.id_aluno}', '')
             
-            # Incrementa os contadores conforme a resposta do formulário
             if esta_presente:
                 total_presentes += 1
             else:
@@ -93,10 +92,6 @@ def editarChamada(request):
         id_chamada = request.POST.get('id_chamada')
         registro = get_object_or_404(Chamada, id_chamada=id_chamada)
         
-        # registro.presente = f'presenca_{id_chamada}' in request.POST
-        # registro.justificativa = request.POST.get(f'justificativa_{id_chamada}', '')
-        # registro.updated_at = timezone.now()
-        # registro.save()
         Chamada.objects.filter(id_chamada=id_chamada).update(
         presente=f'presenca_{id_chamada}' in request.POST,
         justificativa=request.POST.get(f'justificativa_{id_chamada}', ''),
@@ -107,14 +102,13 @@ def editarChamada(request):
     return render(request, 'editarChamada.html', {
         'chamadas': chamadas,
         'turmas': turmas,
-        'pesquisou': pesquisou # Enviamos essa flag para o template
+        'pesquisou': pesquisou
     })
 
 
-# 3. TELA DE ANÁLISES (Dashboard BI)
+# 4. TELA DE ANÁLISES (Dashboard BI)
 @login_required
 def analises(request):
-    # Cálculos para os KPIs solicitados
     total_registros = Chamada.objects.count()
     presencas = Chamada.objects.filter(presente=True).count()
     
@@ -132,27 +126,77 @@ def analises(request):
     }
     return render(request, 'analises.html', context)
 
-# 4. TELA DE GESTÃO DE CADASTROS
+# 5. TELA DE GESTÃO DE CADASTROS
 @login_required
 def cadastroAluno(request):
     alunos = Aluno.objects.all().order_by('-data')[:10] 
     turmas = Turma.objects.all()
     return render(request, 'cadastroAluno.html', {'alunos': alunos, 'turmas': turmas})
 
-# 5. CADASTRA TURMA
+# 6. CADASTRA TURMA
 @login_required
 def cadastroTurma(request):
-    turmas = Turma.objects.all().order_by('-data')[:10] 
-    return render(request, 'cadastroTurma.html', {'turmas': turmas})
+    turmas = Turma.objects.all().order_by('-data')[:10]
 
+    if request.method == 'POST':
+        nome_input = request.POST.get('new_turma')
+        Periodo_turma = request.POST.get('Periodo_turma')
 
+        print(f"DEBUG POST: {request.POST}")
+        print(nome_input, Periodo_turma)
+        if nome_input and Periodo_turma:
+            Turma.objects.create(
+                nome=nome_input,
+                periodo=Periodo_turma,
+                data=timezone.now(),
+                updated_at=timezone.now()
+            )
+            messages.success(request, f"Turma {nome_input} cadastrada com sucesso!")
+            return redirect('cadastroTurma')
+        else:
+            messages.error(request, "Preencha todos os campos corretamente.")
+
+    return render(request, 'cadastroTurma.html', {
+        'turmas': turmas
+    })
+
+# 7. CADASTRO ALUNO
+@login_required
+def cadastroAluno(request):
+    turmas = Turma.objects.all().order_by('nome')
+    alunos_recentes = Aluno.objects.all().order_by('-id_aluno')[:10]
+
+    if request.method == 'POST':
+        nome = request.POST.get('nome')
+        cpf = request.POST.get('cpf')
+        id_turma = request.POST.get('id_turma')
+
+        if nome and cpf and id_turma:
+            Aluno.objects.create(
+                nome=nome,
+                cpf=cpf,
+                id_turma_id=id_turma,
+                data=timezone.now(),
+                updated_at=timezone.now()
+            )
+            messages.success(request, f"Aluno {nome} cadastrado com sucesso!")
+            return redirect('cadastroAluno')
+        else:
+            messages.error(request, "Preencha todos os campos corretamente.")
+
+    return render(request, 'cadastroAluno.html', {
+        'turmas': turmas,
+        'alunos': alunos_recentes
+    })
+
+# 8. 
 @login_required
 def controle(request):
     chamadas = Chamada.objects.all().order_by('-data')[:5]
     turmas = Turma.objects.all()
     return render(request, 'controle.html', {'turmas': turmas, 'chamadas': chamadas})
 
-# 7. TELA DE LOGIN
+# 8. TELA DE LOGIN
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('turmas')

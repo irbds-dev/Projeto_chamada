@@ -5,42 +5,64 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div class="bg-white p-6 rounded-xl shadow-sm">
-            <h3 class="font-bold mb-4">Novo Aluno</h3>
-            <form class="space-y-4">
-                <input type="text" placeholder="Nome Completo" class="w-full border p-2 rounded">
-                <input type="text" placeholder="CPF" class="w-full border p-2 rounded">
-                <select class="w-full border p-2 rounded">
+            <h3 class="font-bold mb-4 italic text-gray-600">Novo Aluno</h3>
+            <form method="POST" class="space-y-4">
+                {% csrf_token %}
+                <input type="text" name="nome" placeholder="Nome Completo" required
+                       class="w-full border p-3 rounded-lg focus:border-[#1E5BB8] outline-none">
+                
+                <input type="text" name="cpf" placeholder="CPF (000.000.000-00)" required
+                       class="w-full border p-3 rounded-lg focus:border-[#1E5BB8] outline-none">
+                
+                <select name="id_turma" required class="w-full border p-3 rounded-lg focus:border-[#1E5BB8] outline-none bg-gray-50">
+                    <option value="" disabled selected>Selecione a Turma</option>
                     {% for t in turmas %}
                     <option value="{{ t.id_turma }}">{{ t.nome }} - {{ t.periodo }}</option>
                     {% endfor %}
                 </select>
-                <div class="flex gap-2">
-                    <button class="btn-azul flex-1 py-2">Salvar</button>
-                    <button type="button" class="bg-gray-100 px-4 rounded border border-blue-800 text-blue-800">Importar Excel</button>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="btn-azul flex-1 py-3 shadow-md hover:scale-[1.02] transition-transform">
+                        💾 Salvar Aluno
+                    </button>
+                    <button type="button" class="bg-gray-50 px-4 rounded border border-blue-800 text-blue-800 hover:bg-blue-50 transition-colors">
+                        📊 Importar Excel
+                    </button>
                 </div>
             </form>
         </div>
 
         <div class="bg-white p-6 rounded-xl shadow-sm">
-            <h3 class="font-bold mb-4">Alunos Cadastrados Recentemente</h3>
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="text-left border-b text-gray-400">
-                        <th class="pb-2">Nome</th>
-                        <th class="pb-2">Turma</th>
-                        <th class="pb-2">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for aluno in alunos %}
-                    <tr class="border-b">
-                        <td class="py-2">{{ aluno.nome }}</td>
-                        <td class="py-2">{{ aluno.id_turma.nome }} - {{ aluno.id_turma.periodo }}</td>
-                        <td class="py-2">✏️ 🗑️</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <h3 class="font-bold mb-4 italic text-gray-600">Cadastrados Recentemente</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left border-b text-gray-400">
+                            <th class="pb-2">Nome</th>
+                            <th class="pb-2">Turma</th>
+                            <th class="pb-2 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        {% for aluno in alunos %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="py-3 font-medium">{{ aluno.nome }}</td>
+                            <td class="py-3 text-gray-500 text-xs">
+                                {{ aluno.id_turma.nome }} ({{ aluno.id_turma.periodo }})
+                            </td>
+                            <td class="py-3 text-center">
+                                <button class="text-blue-500 hover:underline mr-2">✏️</button>
+                                <button class="text-red-400 hover:underline">🗑️</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="py-4 text-center text-gray-400 italic">Nenhum aluno cadastrado no banco local.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
