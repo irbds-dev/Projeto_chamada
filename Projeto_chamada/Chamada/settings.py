@@ -29,7 +29,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = env('SECRET_KEY')
 DEBUG=(bool, False)
 
-ALLOWED_HOSTS = ['archlinux.tail0357fc.ts.net', '127.0.0.1']
+ALLOWED_HOSTS = ['archlinux-1.tail0357fc.ts.net', '127.0.0.1']
 CSRF_TRUSTED_ORIGINS = [
     'https://archlinux.tail0357fc.ts.net',
 ]

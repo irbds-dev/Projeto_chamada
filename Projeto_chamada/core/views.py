@@ -136,22 +136,24 @@ def cadastroAluno(request):
 # 6. CADASTRA TURMA
 @login_required
 def cadastroTurma(request):
-    turmas = Turma.objects.all().order_by('-data')[:10]
+    turmas = Turma.objects.all().order_by('-data')
 
     if request.method == 'POST':
         nome_input = request.POST.get('new_turma')
         Periodo_turma = request.POST.get('Periodo_turma')
 
-        print(f"DEBUG POST: {request.POST}")
-        print(nome_input, Periodo_turma)
         if nome_input and Periodo_turma:
-            Turma.objects.create(
-                nome=nome_input,
-                periodo=Periodo_turma,
-                data=timezone.now(),
-                updated_at=timezone.now()
-            )
-            messages.success(request, f"Turma {nome_input} cadastrada com sucesso!")
+            registro = Turma.objects.filter(nome=nome_input, periodo=Periodo_turma).count()
+            if registro == 0:
+                Turma.objects.create(
+                    nome=nome_input,
+                    periodo=Periodo_turma,
+                    data=timezone.now(),
+                    updated_at=timezone.now()
+                )
+                messages.success(request, f"Turma {nome_input} cadastrada com sucesso!")
+            else:
+                messages.error(request, f"Turma {nome_input} já cadastrada anteriormente!")
             return redirect('cadastroTurma')
         else:
             messages.error(request, "Preencha todos os campos corretamente.")
