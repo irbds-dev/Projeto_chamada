@@ -31,7 +31,7 @@ DEBUG=(bool, False)
 
 ALLOWED_HOSTS = ['archlinux-1.tail0357fc.ts.net', '127.0.0.1']
 CSRF_TRUSTED_ORIGINS = [
-    'https://archlinux.tail0357fc.ts.net',
+    'https://archlinux-1.tail0357fc.ts.net',
 ]
 
 

@@ -9,8 +9,17 @@ from django.contrib                 import messages
 
 # 1. TELA DE SELEÇÃO DE TURMAS
 def turmas(request):
-    todas_turmas = Turma.objects.all()
-    return render(request, 'turmas.html', {'turmas': todas_turmas})
+    termo_busca = request.GET.get('nm_turma', '').strip()
+    
+    if termo_busca:
+        todas_turmas = Turma.objects.filter(nome__icontains=termo_busca)
+    else:
+        todas_turmas = Turma.objects.all()
+
+    return render(request, 'turmas.html', {
+        'turmas': todas_turmas,
+        'termo_busca': termo_busca
+    })
 
 
 # 2. TELA DE CHAMADA (Professor/Coordenação)
