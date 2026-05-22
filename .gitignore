@@ -1,3 +1,4 @@
+#escrevendo um comentário para o arquivo .gitignore do Python -> LM 21052026
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
