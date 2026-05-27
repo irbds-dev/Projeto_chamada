@@ -6,20 +6,25 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div class="bg-white p-6 rounded-xl shadow-sm">
             <h3 class="font-bold mb-4 italic text-gray-600">Novo Aluno</h3>
-            <form method="POST" class="space-y-4">
-                {% csrf_token %}
-                <input type="text" name="nome" placeholder="Nome Completo" required
-                       class="w-full border p-3 rounded-lg focus:border-[#1E5BB8] outline-none">
-                
-                <input type="text" name="cpf" placeholder="CPF (000.000.000-00)" required
-                       class="w-full border p-3 rounded-lg focus:border-[#1E5BB8] outline-none">
-                
-                <select name="id_turma" required class="w-full border p-3 rounded-lg focus:border-[#1E5BB8] outline-none bg-gray-50">
-                    <option value="" disabled selected>Selecione a Turma</option>
+
+            <form method="GET" action="" id="form-filtro-turma" class="mb-4">
+                <select name="id_turma" onchange="this.form.submit()" required class="w-full border p-3 rounded-lg focus:border-[#1E5BB8] outline-none bg-gray-50">
+                    <option value="" disabled {% if not turma_filtrada_id %}selected{% endif %}>Selecione a Turma</option>
+                    
                     {% for t in turmas %}
-                    <option value="{{ t.id_turma }}">{{ t.nome }} - {{ t.periodo }}</option>
+                    <option value="{{ t.id_turma }}" {% if t.id_turma|slugify == turma_filtrada_id|slugify %}selected{% endif %}>
+                        {{ t.nome }} - {{ t.periodo }}
+                    </option>
                     {% endfor %}
                 </select>
+            </form>
+
+            <form method="POST" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="id_turma" value="{{ turma_filtrada_id }}">
+
+                <input type="text" name="nome" placeholder="Nome Completo" required
+                       class="w-full border p-3 rounded-lg focus:border-[#1E5BB8] outline-none">
 
                 <div class="flex gap-2 pt-2">
                     <button type="submit" class="btn-azul flex-1 py-3 shadow-md hover:scale-[1.02] transition-transform">

@@ -175,17 +175,21 @@ def cadastroTurma(request):
 @login_required
 def cadastroAluno(request):
     turmas = Turma.objects.all().order_by('nome')
-    alunos_recentes = Aluno.objects.all().order_by('-id_aluno')[:10]
+    turma_filtrada_id = request.GET.get('id_turma', '').strip()
+
+    if turma_filtrada_id:
+        alunos = Aluno.objects.filter(id_turma_id=turma_filtrada_id).order_by('-nome')
+    else:
+        # Se nenhuma turma for escolhida, traz os cadastrados recentemente (ex: últimos 10)
+        alunos = Aluno.objects.all().order_by('id_turma')[:10]
 
     if request.method == 'POST':
         nome = request.POST.get('nome')
-        cpf = request.POST.get('cpf')
         id_turma = request.POST.get('id_turma')
 
-        if nome and cpf and id_turma:
+        if nome and id_turma:
             Aluno.objects.create(
                 nome=nome,
-                cpf=cpf,
                 id_turma_id=id_turma,
                 data=timezone.now(),
                 updated_at=timezone.now()
@@ -197,7 +201,8 @@ def cadastroAluno(request):
 
     return render(request, 'cadastroAluno.html', {
         'turmas': turmas,
-        'alunos': alunos_recentes
+        'alunos': alunos,
+        'turma_filtrada_id': turma_filtrada_id
     })
 
 # 8. 
