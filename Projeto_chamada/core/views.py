@@ -2,12 +2,13 @@ from django.shortcuts               import render, redirect, get_object_or_404
 from .models                        import Turma, Aluno, Chamada
 from django.utils                   import timezone
 from django.db.models               import Count, Q
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth            import authenticate, login
 from django.contrib                 import messages
 
 
 # 1. TELA DE SELEÇÃO DE TURMAS
+@login_required
 def turmas(request):
     termo_busca = request.GET.get('nm_turma', '').strip()
     
@@ -23,6 +24,8 @@ def turmas(request):
 
 
 # 2. TELA DE CHAMADA (Professor/Coordenação)
+@login_required
+@permission_required('core.add_chamada', raise_exception=True)
 def realizar_chamada(request, id_turma):
     turma = get_object_or_404(Turma, id_turma=id_turma)
     alunos = Aluno.objects.filter(id_turma=turma)

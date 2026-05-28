@@ -143,3 +143,5 @@ USE_I18N = True
 STATIC_URL = 'static/'
 
 LOGOUT_REDIRECT_URL = 'turmas'
+
+LOGIN_URL = 'login'
