@@ -1,33 +1,293 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1 class="text-3xl font-bold mb-8">Dashboard de Frequência</h1>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-    <div class="kpi-card border-l-8 border-[#58B947]">
-        <p class="text-gray-500">Taxa de Presença Geral</p>
-        <h2 class="text-4xl font-bold text-[#58B947]">92.4%</h2>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+<div class="max-w-7xl mx-auto p-4 space-y-6">
+    <h1 class="text-3xl font-bold text-gray-800">Dashboard de Frequência Interativo</h1>
+
+    <div id="filtroForm" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-wrap gap-4 items-end">
+        <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Ano</label>
+            <select id="filtro_ano" class="qlik-filter border border-gray-300 rounded-lg p-2 text-sm bg-white min-w-[100px]">
+                <option value="2026" {% if ano_inicial == 2026 %}selected{% endif %}>2026</option>
+                <option value="2025" {% if ano_inicial == 2025 %}selected{% endif %}>2025</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Mês</label>
+            <select id="filtro_mes" class="qlik-filter border border-gray-300 rounded-lg p-2 text-sm bg-white min-w-[120px]">
+                <option value="">Todos</option>
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Turma</label>
+            <select id="filtro_turma" class="qlik-filter border border-gray-300 rounded-lg p-2 text-sm bg-white min-w-[130px]">
+                <option value="">Todas</option>
+                {% for turma in turmas_disponiveis %}
+                    <option value="{{ turma }}">{{ turma }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Período</label>
+            <select id="filtro_periodo" class="qlik-filter border border-gray-300 rounded-lg p-2 text-sm bg-white min-w-[130px]">
+                <option value="">Todos</option>
+                {% for p in periodos_disponiveis %}
+                    <option value="{{ p }}">{{ p }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Buscar Aluno</label>
+            <input type="text" id="filtro_aluno" placeholder="Nome do aluno..." class="qlik-filter border border-gray-300 rounded-lg p-2 text-sm bg-white max-w-[180px]">
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Data de Referência</label>
+            <input type="date" id="filtro_data" value="{{ data_atual }}" class="qlik-filter border border-gray-300 rounded-lg p-2 text-sm bg-white">
+        </div>
     </div>
-    <div class="kpi-card border-l-8 border-red-500">
-        <p class="text-gray-500">Taxa de Faltas</p>
-        <h2 class="text-4xl font-bold text-red-500">7.6%</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-[#58B947]">
+            <p class="text-gray-500 text-sm font-medium">Taxa de Presença Geral</p>
+            <h2 id="kpi_presenca" class="text-3xl font-bold text-[#58B947] mt-2">0%</h2>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-red-500">
+            <p class="text-gray-500 text-sm font-medium">Taxa de Faltas</p>
+            <h2 id="kpi_falta" class="text-3xl font-bold text-red-500 mt-2">0%</h2>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-blue-500">
+            <p class="text-gray-500 text-sm font-medium">Total Alunos Cadastrados</p>
+            <h2 id="kpi_total" class="text-3xl font-bold text-blue-500 mt-2">0</h2>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-orange-500">
+            <p class="text-gray-500 text-sm font-medium">Alunos em Risco</p>
+            <h2 id="kpi_risco" class="text-3xl font-bold text-orange-500 mt-2">0</h2>
+        </div>
     </div>
-    <div class="kpi-card border-l-8 border-orange-500">
-        <p class="text-gray-500">Alunos em Risco</p>
-        <h2 class="text-4xl font-bold text-orange-500">5</h2>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h3 class="font-bold text-lg text-gray-700 mb-4">Taxa de Presença Mensal</h3>
+            <div class="w-full h-64"><canvas id="chartPresencaMensal"></canvas></div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+            <h3 class="font-bold text-lg text-gray-700 mb-4">Top 10 - Alunos Faltantes</h3>
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-xs text-gray-500 border-b">
+                    <tr>
+                        <th class="py-3 px-4">Aluno</th>
+                        <th class="py-3 px-4">Turma</th>
+                        <th class="py-3 px-4">Período</th>
+                        <th class="py-3 px-4 text-center">Faltas</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody_top10" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
+            <h3 class="font-bold text-lg text-gray-700 mb-4">Risco de Evasão (Funil Real)</h3>
+            <div id="container_funil" class="space-y-2 flex flex-col items-center w-full my-auto">
+                </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h3 class="font-bold text-lg text-gray-700 mb-4">Faltas por Turma (%)</h3>
+            <div class="w-full h-64"><canvas id="chartFaltasTurma"></canvas></div>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
+        <div class="flex justify-between items-center flex-wrap gap-4">
+            <h3 class="font-bold text-xl text-gray-700">Lista Geral de Alunos (Data Filtrada)</h3>
+            <div class="flex gap-2">
+                <button onclick="exportarExcel()" class="bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-green-700 transition flex items-center gap-1">
+                    Excel
+                </button>
+                <button onclick="exportarPDF()" class="bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-red-700 transition flex items-center gap-1">
+                    PDF
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table id="tabelaGeralAlunos" class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-xs text-gray-500 uppercase border-b">
+                    <tr>
+                        <th class="p-2">
+                            <div class="flex flex-col gap-1">
+                                <span class="flex items-center gap-2">Aluno <button onclick="copiarColuna(0)" class="text-blue-500 text-[10px] lowercase hover:underline">Copiar</button></span>
+                                <input type="text" onkeyup="filtrarColunaTabela(0)" placeholder="Filtrar..." class="border p-1 rounded text-xs w-full font-normal">
+                            </div>
+                        </th>
+                        <th class="p-2">
+                            <div class="flex flex-col gap-1">
+                                <span class="flex items-center gap-2">Turma <button onclick="copiarColuna(1)" class="text-blue-500 text-[10px] lowercase hover:underline">Copiar</button></span>
+                                <input type="text" onkeyup="filtrarColunaTabela(1)" placeholder="Filtrar..." class="border p-1 rounded text-xs w-full font-normal">
+                            </div>
+                        </th>
+                        <th class="p-2">
+                            <div class="flex flex-col gap-1">
+                                <span class="flex items-center gap-2">Período <button onclick="copiarColuna(2)" class="text-blue-500 text-[10px] lowercase hover:underline">Copiar</button></span>
+                                <input type="text" onkeyup="filtrarColunaTabela(2)" placeholder="Filtrar..." class="border p-1 rounded text-xs w-full font-normal">
+                            </div>
+                        </th>
+                        <th class="p-2">
+                            <div class="flex flex-col gap-1">
+                                <span class="flex items-center gap-2">Presente <button onclick="copiarColuna(3)" class="text-blue-500 text-[10px] lowercase hover:underline">Copiar</button></span>
+                                <input type="text" onkeyup="filtrarColunaTabela(3)" placeholder="Filtrar..." class="border p-1 rounded text-xs w-full font-normal">
+                            </div>
+                        </th>
+                        <th class="p-2">
+                            <div class="flex flex-col gap-1">
+                                <span class="flex items-center gap-2">Justificativa <button onclick="copiarColuna(4)" class="text-blue-500 text-[10px] lowercase hover:underline">Copiar</button></span>
+                                <input type="text" onkeyup="filtrarColunaTabela(4)" placeholder="Filtrar..." class="border p-1 rounded text-xs w-full font-normal">
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="tbody_geral" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
-<div class="bg-white p-8 rounded-xl shadow-sm">
-    <h3 class="font-bold text-xl mb-6">Frequência Mensal por Período</h3>
-    <div class="h-64 bg-gray-50 rounded-lg flex items-end justify-around p-4 gap-2">
-        <div class="bg-[#1E5BB8] w-full" style="height: 80%"></div>
-        <div class="bg-[#58B947] w-full" style="height: 95%"></div>
-        <div class="bg-gray-300 w-full" style="height: 60%"></div>
-    </div>
-    <div class="flex justify-around mt-4 text-sm text-gray-500">
-        <span>Diurno</span>
-        <span>Vespertino</span>
-        <span>Noturno</span>
-    </div>
-</div>
+<script>
+    let chartMensal, chartTurma;
+
+    document.querySelectorAll('.qlik-filter').forEach(element => {
+        element.addEventListener('change', carregarDadosDashboard);
+        element.addEventListener('keyup', carregarDadosDashboard);
+    });
+
+    function carregarDadosDashboard() {
+        const ano = document.getElementById('filtro_ano').value;
+        const mes = document.getElementById('filtro_mes').value;
+        const turma = document.getElementById('filtro_turma').value;
+        const periodo = document.getElementById('filtro_periodo').value;
+        const aluno = document.getElementById('filtro_aluno').value;
+        const data = document.getElementById('filtro_data').value;
+
+        const url = "{% url 'dados_dashboard' %}?ano=" + ano + "&mes=" + mes + "&turma=" + turma + "&periodo=" + periodo + "&aluno=" + aluno + "&data=" + data;
+
+        fetch(url)
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error('Erro na requisição do dashboard');
+                }
+                return res.json();
+            })
+            .then(data => {
+                // Atualiza KPIs
+                document.getElementById('kpi_presenca').innerText = data.taxa_presenca + '%';
+                document.getElementById('kpi_falta').innerText = data.taxa_falta + '%';
+                document.getElementById('kpi_total').innerText = data.total_alunos;
+                document.getElementById('kpi_risco').innerText = data.alunos_risco;
+
+                // Atualiza Gráfico Mensal
+                chartMensal.data.datasets[0].data = data.evolucao_mensal;
+                chartMensal.update();
+
+                // Atualiza Gráfico Turma
+                chartTurma.data.labels = data.labels_turmas;
+                chartTurma.data.datasets[0].data = data.pct_faltas_turmas;
+                chartTurma.update();
+
+                // Atualiza Top 10
+                const tbodyTop = document.getElementById('tbody_top10');
+                tbodyTop.innerHTML = data.top_10_faltantes.map(i => `
+                    <tr class="hover:bg-gray-50"><td class="py-2 px-4 font-medium">${i.aluno_nome}</td><td class="py-2 px-4">${i.turma_nome}</td><td class="py-2 px-4">${i.periodo}</td><td class="py-2 px-4 text-center text-red-500 font-bold">${i.total_faltas}</td></tr>
+                `).join('') || '<tr><td colspan="4" class="p-4 text-center text-gray-400">Sem ocorrências</td></tr>';
+
+                // Atualiza Funil Real (CSS baseado na proporção matemática real)
+                const f = data.funil;
+                const maxVal = Math.max(f.total, f.alerta, f.risco, f.critico, f.evasao) || 1;
+                document.getElementById('container_funil').innerHTML = `
+                    <div class="bg-[#1E5BB8] text-white font-bold text-center py-2 rounded shadow-sm transition-all" style="width: ${(f.total/maxVal)*100}%">Total: ${f.total}</div>
+                    <div class="bg-orange-400 text-white font-bold text-center py-2 rounded shadow-sm transition-all" style="width: ${(f.alerta/maxVal)*100}%">Alerta: ${f.alerta}</div>
+                    <div class="bg-orange-600 text-white font-bold text-center py-2 rounded shadow-sm transition-all" style="width: ${(f.risco/maxVal)*100}%">Risco: ${f.risco}</div>
+                    <div class="bg-red-500 text-white font-bold text-center py-2 rounded shadow-sm transition-all" style="width: ${(f.critico/maxVal)*100}%">Crítico: ${f.critico}</div>
+                    <div class="bg-red-700 text-white font-bold text-center py-2 rounded shadow-sm transition-all" style="width: ${(f.evasao/maxVal)*100}%">Evasão: ${f.evasao}</div>
+                `;
+
+                // Atualiza Tabela Geral Inferior
+                const tbodyGeral = document.getElementById('tbody_geral');
+                tbodyGeral.innerHTML = data.tabela_alunos.map(a => `
+                    <tr class="hover:bg-gray-50 border-b"><td class="p-2 font-medium">${a.aluno}</td><td class="p-2">${a.turma}</td><td class="p-2">${a.periodo}</td><td class="p-2">${a.presente}</td><td class="p-2">${a.justificativa}</td></tr>
+                `).join('') || '<tr><td colspan="5" class="p-4 text-center text-gray-400">Nenhum registro nesta data.</td></tr>';
+            });
+    }
+
+    // Inicialização dos Gráficos vazios
+    const ctxM = document.getElementById('chartPresencaMensal').getContext('2d');
+    chartMensal = new Chart(ctxM, { type: 'bar', data: { labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'], datasets: [{ label: 'Presença %', data: [], backgroundColor: '#58B947', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false } });
+
+    const ctxT = document.getElementById('chartFaltasTurma').getContext('2d');
+    chartTurma = new Chart(ctxT, { type: 'bar', data: { labels: [], datasets: [{ label: '% de Faltas', data: [], backgroundColor: ['#58B947','#F59E0B','#1E5BB8','#EF4444'], borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false } });
+
+    // Executa a primeira carga automática ao abrir a tela
+    window.onload = carregarDadosDashboard;
+
+    // Filtros por coluna na Tabela
+    function filtrarColunaTabela(indexColuna) {
+        const input = document.querySelectorAll('#tabelaGeralAlunos thead input')[indexColuna];
+        const filter = input.value.toUpperCase();
+        const rows = document.querySelectorAll('#tbody_geral tr');
+        
+        rows.forEach(row => {
+            const cell = row.getElementsByTagName('td')[indexColuna];
+            if (cell) {
+                const text = cell.textContent || cell.innerText;
+                row.style.display = text.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+            }
+        });
+    }
+
+    // Função para Copiar Coluna Completa
+    function copiarColuna(indexColuna) {
+        const rows = document.querySelectorAll('#tbody_geral tr');
+        let valores = [];
+        rows.forEach(row => {
+            const cell = row.getElementsByTagName('td')[indexColuna];
+            if (cell && row.style.display !== "none") {
+                valores.push(cell.innerText.strip || cell.innerText);
+            }
+        });
+        navigator.clipboard.writeText(valores.join('\n'));
+        alert('Coluna copiada para a área de transferência!');
+    }
+
+    // EXPORTADORES CLIENT-SIDE
+    function exportarExcel() {
+        const table = document.getElementById("tabelaGeralAlunos");
+        const wb = XLSX.utils.table_to_book(table, {sheet: "Frequencia"});
+        XLSX.writeFile(wb, "Frequencia_Alunos.xlsx");
+    }
+
+    function exportarPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.text("Relatorio de Frequencia - Conecta Presenca", 14, 15);
+        doc.autoTable({ html: '#tabelaGeralAlunos', startY: 20 });
+        doc.save('Frequencia_Alunos.pdf');
+    }
+</script>
 {% endblock %}

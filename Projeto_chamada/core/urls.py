@@ -5,6 +5,7 @@ from django.contrib.auth import views as auth_views
 urlpatterns = [
     path('', views.turmas, name='turmas'),
     path('analises/', views.analises, name='analises'),
+    path('analises/dados/', views.dados_dashboard, name='dados_dashboard'),
     path('chamada/<int:id_turma>/', views.realizar_chamada, name='chamada'),
     path('cadastroAluno/', views.cadastroAluno, name='cadastroAluno'),
     path('cadastroTurma/', views.cadastroTurma, name='cadastroTurma'),

@@ -19,6 +19,9 @@ class Aluno(models.Model):
     class Meta:
         managed = False
         db_table = 'aluno'
+    
+    def __str__(self):
+        return self.nome
 
 
 class Chamada(models.Model):
@@ -45,3 +48,6 @@ class Turma(models.Model):
     class Meta:
         managed = False
         db_table = 'turma'
+    
+    def __str__(self):
+        return f"{self.nome} - {self.periodo}"
