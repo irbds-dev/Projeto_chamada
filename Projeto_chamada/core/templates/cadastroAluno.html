@@ -1,18 +1,29 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="flex flex-col gap-8">
-    <h1 class="text-3xl font-bold text-[#1E5BB8]">Gestão de Cadastro - Aluno</h1>
+    <h1 class="text-3xl font-bold text-[#1E5BB8]">
+        {% if aluno_para_editar %}⚙️ Editar Cadastro - Aluno{% else %}Gestão de Cadastro - Aluno{% endif %}
+    </h1>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div class="bg-white p-6 rounded-xl shadow-sm">
-            <h3 class="font-bold mb-4 italic text-gray-600">Novo Aluno</h3>
+        <div class="bg-white p-6 rounded-xl shadow-sm border-t-4 {% if aluno_para_editar %}border-yellow-500{% else %}border-[#1E5BB8]{% endif %}">
+            
+            <h3 class="font-bold mb-4 italic text-gray-600">
+                {% if aluno_para_editar %}✏️ Modificando: {{ aluno_para_editar.nome }}{% else %}Novo Aluno{% endif %}
+            </h3>
 
             <form method="GET" action="" id="form-filtro-turma" class="mb-4">
-                <select name="id_turma" onchange="this.form.submit()" required class="w-full border p-3 rounded-lg focus:border-[#1E5BB8] outline-none bg-gray-50">
-                    <option value="" disabled {% if not turma_filtrada_id %}selected{% endif %}>Selecione a Turma</option>
+                <select name="id_turma" onchange="this.form.submit()" required 
+                        class="w-full border p-3 rounded-lg focus:border-[#1E5BB8] outline-none bg-gray-50 {% if aluno_para_editar %}opacity-60 pointer-events-none{% endif %}">
+                    <option value="" disabled {% if not turma_filtrada_id and not aluno_para_editar %}selected{% endif %}>Selecione a Turma</option>
                     
                     {% for t in turmas %}
-                    <option value="{{ t.id_turma }}" {% if t.id_turma|slugify == turma_filtrada_id|slugify %}selected{% endif %}>
+                    <option value="{{ t.id_turma }}" 
+                        {% if aluno_para_editar and t.id_turma == aluno_para_editar.id_turma_id %}
+                            selected
+                        {% elif t.id_turma|slugify == turma_filtrada_id|slugify %}
+                            selected
+                        {% endif %}>
                         {{ t.nome }} - {{ t.periodo }}
                     </option>
                     {% endfor %}
@@ -21,18 +32,28 @@
 
             <form method="POST" class="space-y-4">
                 {% csrf_token %}
-                <input type="hidden" name="id_turma" value="{{ turma_filtrada_id }}">
+                
+                <input type="hidden" name="id_turma" value="{% if aluno_para_editar %}{{ aluno_para_editar.id_turma_id }}{% else %}{{ turma_filtrada_id }}{% endif %}">
 
                 <input type="text" name="nome" placeholder="Nome Completo" required
+                       value="{% if aluno_para_editar %}{{ aluno_para_editar.nome }}{% endif %}"
                        class="w-full border p-3 rounded-lg focus:border-[#1E5BB8] outline-none">
 
-                <div class="flex gap-2 pt-2">
-                    <button type="submit" class="btn-azul flex-1 py-3 shadow-md hover:scale-[1.02] transition-transform">
-                        💾 Salvar Aluno
+                <div class="flex flex-wrap gap-2 pt-2">
+                    <button type="submit" class="btn-azul flex-1 py-3 shadow-md hover:scale-[1.02] transition-transform font-bold">
+                        {% if aluno_para_editar %}💾 Atualizar Registro{% else %}💾 Salvar Aluno{% endif %}
                     </button>
-                    <button type="button" class="bg-gray-50 px-4 rounded border border-blue-800 text-blue-800 hover:bg-blue-50 transition-colors">
+                    
+                    {% if aluno_para_editar %}
+                    <a href="{% url 'cadastroAluno' %}?id_turma={{ turma_filtrada_id }}" 
+                       class="bg-gray-100 px-4 flex items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-200 transition-colors font-medium text-sm">
+                        ❌ Cancelar
+                    </a>
+                    {% else %}
+                    <button type="button" class="bg-gray-50 px-4 rounded border border-blue-800 text-blue-800 hover:bg-blue-50 transition-colors text-sm">
                         📊 Importar Excel
                     </button>
+                    {% endif %}
                 </div>
             </form>
         </div>
@@ -50,14 +71,20 @@
                     </thead>
                     <tbody class="divide-y">
                         {% for aluno in alunos %}
-                        <tr class="hover:bg-gray-50 transition-colors">
+                        <tr class="hover:bg-gray-50 transition-colors {% if aluno_para_editar.id_aluno == aluno.id_aluno %}bg-yellow-50{% endif %}">
                             <td class="py-3 font-medium">{{ aluno.nome }}</td>
                             <td class="py-3 text-gray-500 text-xs">
                                 {{ aluno.id_turma.nome }} ({{ aluno.id_turma.periodo }})
                             </td>
-                            <td class="py-3 text-center">
-                                <button class="text-blue-500 hover:underline mr-2">✏️</button>
-                                <button class="text-red-400 hover:underline">🗑️</button>
+                            <td class="py-3 text-center flex items-center justify-center gap-3">
+                                <a href="?editar={{ aluno.id_aluno }}&id_turma={{ turma_filtrada_id }}" 
+                                   class="text-blue-500 hover:underline text-lg transition-transform hover:scale-110" 
+                                   title="Editar aluno">
+                                    ✏️
+                                </a>
+                                <button class="text-red-400 hover:underline text-lg transition-transform hover:scale-110" title="Excluir aluno">
+                                    🗑️
+                                </button>
                             </td>
                         </tr>
                         {% empty %}

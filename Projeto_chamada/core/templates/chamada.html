@@ -45,7 +45,7 @@
 
             <div class="mt-8 flex items-center justify-between border-t pt-6">
                 {% if ja_existe %}
-                    {% if request.user.is_authenticated %}
+                    {% if request.user.is_superuser %}
                         <a href="{% url 'editarChamada' %}?turma={{ turma.id_turma }}" class="text-[#1E5BB8] font-bold hover:underline flex items-center gap-2">
                             <span>✏️ Corrigir registros</span>
                         </a>
