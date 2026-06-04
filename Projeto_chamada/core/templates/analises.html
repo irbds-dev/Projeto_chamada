@@ -6,162 +6,166 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
-<div class="max-w-7xl mx-auto p-4 space-y-6">
-    <h1 class="text-3xl font-bold text-gray-800">Dashboard de Frequência Interativo</h1>
 
-    <div id="filtroForm" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-wrap gap-4 items-end">
-        <div>
+
+<!-- Container mestre cobrindo 95% da tela -->
+<div class="w-[95%] mx-auto p-2 space-y-6 max-w-none">
+    <h1 class="text-3xl font-bold text-gray-800 tracking-tight">Dashboard de Frequência Interativo</h1>
+
+    <!-- Barra de Filtros (Data removida daqui) -->
+    <div id="filtroForm" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-wrap gap-4 items-end w-full">
+        
+        <!-- Combo: Ano -->
+        <div class="qlik-listbox-container">
             <label class="block text-xs font-semibold text-gray-500 mb-1">Ano</label>
-            <select id="filtro_ano" class="qlik-filter border border-gray-300 rounded-lg p-2 text-sm bg-white min-w-[100px]">
-                <option value="2026" {% if ano_inicial == 2026 %}selected{% endif %}>2026</option>
-                <option value="2025" {% if ano_inicial == 2025 %}selected{% endif %}>2025</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-xs font-semibold text-gray-500 mb-1">Mês</label>
-            <select id="filtro_mes" class="qlik-filter border border-gray-300 rounded-lg p-2 text-sm bg-white min-w-[120px]">
-                <option value="">Todos</option>
-                <option value="1">Janeiro</option>
-                <option value="2">Fevereiro</option>
-                <option value="3">Março</option>
-                <option value="4">Abril</option>
-                <option value="5">Maio</option>
-                <option value="6">Junho</option>
-                <option value="7">Julho</option>
-                <option value="8">Agosto</option>
-                <option value="9">Setembro</option>
-                <option value="10">Outubro</option>
-                <option value="11">Novembro</option>
-                <option value="12">Dezembro</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-xs font-semibold text-gray-500 mb-1">Turma</label>
-            <select id="filtro_turma" class="qlik-filter border border-gray-300 rounded-lg p-2 text-sm bg-white min-w-[130px]">
-                <option value="">Todas</option>
-                {% for turma in turmas_disponiveis %}
-                    <option value="{{ turma }}">{{ turma }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div>
-            <label class="block text-xs font-semibold text-gray-500 mb-1">Período</label>
-            <select id="filtro_periodo" class="qlik-filter border border-gray-300 rounded-lg p-2 text-sm bg-white min-w-[130px]">
-                <option value="">Todos</option>
-                {% for p in periodos_disponiveis %}
-                    <option value="{{ p }}">{{ p }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div>
-            <label class="block text-xs font-semibold text-gray-500 mb-1">Buscar Aluno</label>
-            <input type="text" id="filtro_aluno" placeholder="Nome do aluno..." class="qlik-filter border border-gray-300 rounded-lg p-2 text-sm bg-white max-w-[180px]">
-        </div>
-        <div>
-            <label class="block text-xs font-semibold text-gray-500 mb-1">Data de Referência</label>
-            <input type="date" id="filtro_data" value="{{ data_atual }}" class="qlik-filter border border-gray-300 rounded-lg p-2 text-sm bg-white">
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-[#58B947]">
-            <p class="text-gray-500 text-sm font-medium">Taxa de Presença Geral</p>
-            <h2 id="kpi_presenca" class="text-3xl font-bold text-[#58B947] mt-2">0%</h2>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-red-500">
-            <p class="text-gray-500 text-sm font-medium">Taxa de Faltas</p>
-            <h2 id="kpi_falta" class="text-3xl font-bold text-red-500 mt-2">0%</h2>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-blue-500">
-            <p class="text-gray-500 text-sm font-medium">Total Alunos Cadastrados</p>
-            <h2 id="kpi_total" class="text-3xl font-bold text-blue-500 mt-2">0</h2>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-orange-500">
-            <p class="text-gray-500 text-sm font-medium">Alunos em Risco</p>
-            <h2 id="kpi_risco" class="text-3xl font-bold text-orange-500 mt-2">0</h2>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 class="font-bold text-lg text-gray-700 mb-4">Taxa de Presença Mensal</h3>
-            <div class="w-full h-64"><canvas id="chartPresencaMensal"></canvas></div>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
-            <h3 class="font-bold text-lg text-gray-700 mb-4">Top 10 - Alunos Faltantes</h3>
-            <table class="w-full text-left text-sm text-gray-600">
-                <thead class="bg-gray-50 text-xs text-gray-500 border-b">
-                    <tr>
-                        <th class="py-3 px-4">Aluno</th>
-                        <th class="py-3 px-4">Turma</th>
-                        <th class="py-3 px-4">Período</th>
-                        <th class="py-3 px-4 text-center">Faltas</th>
-                    </tr>
-                </thead>
-                <tbody id="tbody_top10" class="divide-y divide-gray-100"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
-            <h3 class="font-bold text-lg text-gray-700 mb-4">Risco de Evasão (Funil Real)</h3>
-            <div id="container_funil" class="space-y-2 flex flex-col items-center w-full my-auto">
+            <button onclick="toggleListbox(event, 'list_ano')" id="btn_ano" class="border border-gray-300 rounded-lg p-2 text-sm bg-white min-w-[130px] text-left flex justify-between items-center outline-none">
+                <span>Todos</span> <span class="text-xs text-gray-400">▼</span>
+            </button>
+            <div id="list_ano" class="qlik-listbox-menu">
+                <div class="qlik-search-wrapper">
+                    <span class="absolute left-3 text-gray-400 text-xs mt-1">🔍</span>
+                    <input type="text" placeholder="Buscar Ano..." class="qlik-search-input" onkeyup="filtrarItensMenu(this)">
                 </div>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 class="font-bold text-lg text-gray-700 mb-4">Faltas por Turma (%)</h3>
-            <div class="w-full h-64"><canvas id="chartFaltasTurma"></canvas></div>
-        </div>
-    </div>
-
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
-        <div class="flex justify-between items-center flex-wrap gap-4">
-            <h3 class="font-bold text-xl text-gray-700">Lista Geral de Alunos (Data Filtrada)</h3>
-            <div class="flex gap-2">
-                <button onclick="exportarExcel()" class="bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-green-700 transition flex items-center gap-1">
-                    Excel
-                </button>
-                <button onclick="exportarPDF()" class="bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-red-700 transition flex items-center gap-1">
-                    PDF
-                </button>
+                <div class="qlik-options-holder" data-filter-type="ano">
+                    <div class="qlik-option-item" id="qlik_ano_atual" data-value="" onclick="selecionarOpcaoQlik(this)"><span></span><span class="check-icon hidden">✓</span></div>
+                    <div class="qlik-option-item" id="qlik_ano_anterior" data-value="" onclick="selecionarOpcaoQlik(this)"><span></span><span class="check-icon hidden">✓</span></div>
+                </div>
             </div>
         </div>
 
-        <div class="overflow-x-auto">
-            <table id="tabelaGeralAlunos" class="w-full text-left text-sm text-gray-600">
+        <!-- Combo: Mês -->
+        <div class="qlik-listbox-container">
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Mês</label>
+            <button onclick="toggleListbox(event, 'list_mes')" id="btn_mes" class="border border-gray-300 rounded-lg p-2 text-sm bg-white min-w-[160px] text-left flex justify-between items-center outline-none">
+                <span>Todos</span> <span class="text-xs text-gray-400">▼</span>
+            </button>
+            <div id="list_mes" class="qlik-listbox-menu">
+                <div class="qlik-search-wrapper">
+                    <span class="absolute left-3 text-gray-400 text-xs mt-1">🔍</span>
+                    <input type="text" placeholder="Buscar Mês..." class="qlik-search-input" onkeyup="filtrarItensMenu(this)">
+                </div>
+                <div class="qlik-options-holder" data-filter-type="mes">
+                    <div class="qlik-option-item" data-value="1" onclick="selecionarOplik(this)"><span>Janeiro</span><span class="check-icon hidden">✓</span></div>
+                    <div class="qlik-option-item" data-value="2" onclick="selecionarOpcaoQlik(this)"><span>Fevereiro</span><span class="check-icon hidden">✓</span></div>
+                    <div class="qlik-option-item" data-value="3" onclick="selecionarOpcaoQlik(this)"><span>Março</span><span class="check-icon hidden">✓</span></div>
+                    <div class="qlik-option-item" data-value="4" onclick="selecionarOpcaoQlik(this)"><span>Abril</span><span class="check-icon hidden">✓</span></div>
+                    <div class="qlik-option-item" data-value="5" onclick="selecionarOpcaoQlik(this)"><span>Maio</span><span class="check-icon hidden">✓</span></div>
+                    <div class="qlik-option-item" data-value="6" onclick="selecionarOpcaoQlik(this)"><span>Junho</span><span class="check-icon hidden">✓</span></div>
+                    <div class="qlik-option-item" data-value="7" onclick="selecionarOpcaoQlik(this)"><span>Julho</span><span class="check-icon hidden">✓</span></div>
+                    <div class="qlik-option-item" data-value="8" onclick="selecionarOpcaoQlik(this)"><span>Agosto</span><span class="check-icon hidden">✓</span></div>
+                    <div class="qlik-option-item" data-value="9" onclick="selecionarOpcaoQlik(this)"><span>Setembro</span><span class="check-icon hidden">✓</span></div>
+                    <div class="qlik-option-item" data-value="10" onclick="selecionarOpcaoQlik(this)"><span>Outubro</span><span class="check-icon hidden">✓</span></div>
+                    <div class="qlik-option-item" data-value="11" onclick="selecionarOpcaoQlik(this)"><span>Novembro</span><span class="check-icon hidden">✓</span></div>
+                    <div class="qlik-option-item" data-value="12" onclick="selecionarOpcaoQlik(this)"><span>Dezembro</span><span class="check-icon hidden">✓</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Combo: Turma -->
+        <div class="qlik-listbox-container">
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Turma</label>
+            <button onclick="toggleListbox(event, 'list_turma')" id="btn_turma" class="border border-gray-300 rounded-lg p-2 text-sm bg-white min-w-[160px] text-left flex justify-between items-center outline-none">
+                <span>Todas</span> <span class="text-xs text-gray-400">▼</span>
+            </button>
+            <div id="list_turma" class="qlik-listbox-menu">
+                <div class="qlik-search-wrapper">
+                    <span class="absolute left-3 text-gray-400 text-xs mt-1">🔍</span>
+                    <input type="text" placeholder="Buscar Turma..." class="qlik-search-input" onkeyup="filtrarItensMenu(this)">
+                </div>
+                <div class="qlik-options-holder" data-filter-type="turma">
+                    {% for turma in turmas_disponiveis %}
+                        <div class="qlik-option-item" data-value="{{ turma }}" onclick="selecionarOpcaoQlik(this)"><span>{{ turma }}</span><span class="check-icon hidden">✓</span></div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Combo: Período -->
+        <div class="qlik-listbox-container">
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Período</label>
+            <button onclick="toggleListbox(event, 'list_periodo')" id="btn_periodo" class="border border-gray-300 rounded-lg p-2 text-sm bg-white min-w-[160px] text-left flex justify-between items-center outline-none">
+                <span>Todos</span> <span class="text-xs text-gray-400">▼</span>
+            </button>
+            <div id="list_periodo" class="qlik-listbox-menu">
+                <div class="qlik-search-wrapper">
+                    <span class="absolute left-3 text-gray-400 text-xs mt-1">🔍</span>
+                    <input type="text" placeholder="Buscar Período..." class="qlik-search-input" onkeyup="filtrarItensMenu(this)">
+                </div>
+                <div class="qlik-options-holder" data-filter-type="periodo">
+                    {% for p in periodos_disponiveis %}
+                        <div class="qlik-option-item" data-value="{{ p }}" onclick="selecionarOpcaoQlik(this)"><span>{{ p }}</span><span class="check-icon hidden">✓</span></div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 min-w-[200px]">
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Buscar por Aluno</label>
+            <input type="text" id="filtro_aluno" placeholder="Nome do aluno..." class="border border-gray-300 rounded-lg p-2 text-sm bg-white w-full outline-none focus:border-blue-500">
+        </div>
+    </div>
+
+    <!-- Cards de KPIs Consolidados -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 w-full">
+        <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-[#58B947]"><p class="text-gray-500 text-sm font-medium">Taxa de Presença Geral</p><h2 id="kpi_presenca" class="text-4xl font-bold text-[#58B947] mt-2">0%</h2></div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-red-500"><p class="text-gray-500 text-sm font-medium">Taxa de Faltas</p><h2 id="kpi_falta" class="text-4xl font-bold text-red-500 mt-2">0%</h2></div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-blue-500"><p class="text-gray-500 text-sm font-medium">Total Alunos Matriculados</p><h2 id="kpi_total" class="text-4xl font-bold text-blue-500 mt-2">0</h2></div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-orange-500"><p class="text-gray-500 text-sm font-medium">Alunos em Risco Anual</p><h2 id="kpi_risco" class="text-4xl font-bold text-orange-500 mt-2">0</h2></div>
+    </div>
+
+    <!-- Gráficos BI -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
+            <h3 class="font-bold text-lg text-gray-700 mb-4">Taxa de Presença Mensal</h3>
+            <div class="w-full h-72"><canvas id="chartPresencaMensal"></canvas></div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
+            <h3 class="font-bold text-lg text-gray-700 mb-4">Top 10 - Alunos Faltantes</h3>
+            <div class="overflow-y-auto max-h-72 w-full">
+                <table class="w-full text-left text-sm text-gray-600">
+                    <thead class="bg-gray-50 text-xs text-gray-500 border-b sticky top-0"><tr><th class="py-3 px-4">Aluno</th><th>Turma</th><th>Período</th><th class="text-center">Faltas</th></tr></thead>
+                    <tbody id="tbody_top10" class="divide-y divide-gray-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
+            <h3 class="font-bold text-lg text-gray-700 mb-4">Risco de Evasão (Funil Volumétrico Real)</h3>
+            <div id="container_funil" class="w-full flex flex-col items-center justify-center space-y-3 py-4 my-auto"></div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
+            <h3 class="font-bold text-lg text-gray-700 mb-4">Faltas por Turma (%)</h3>
+            <div class="w-full h-72"><canvas id="chartFaltasTurma"></canvas></div>
+        </div>
+    </div>
+
+    <!-- Tabela Geral Ajustada: Data inserida ao lado esquerdo do Botão Excel -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4 w-full">
+        <div class="flex justify-between items-center flex-wrap gap-4">
+            <h3 class="font-bold text-xl text-gray-700">Lista Geral de Frequência (Data Escolhida)</h3>
+            
+            <!-- ALINHAMENTO CORRIGIDO: Input de Data imediatamente antes do Excel -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-gray-500">Data de Consulta:</span>
+                    <input type="date" id="filtro_data" class="border border-gray-300 rounded-lg p-1.5 text-sm bg-white outline-none focus:border-blue-500 font-medium text-gray-700">
+                </div>
+                <button onclick="exportarExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">Excel</button>
+                <button onclick="exportarPDF()" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition">PDF</button>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto w-full">
+            <table id="tabelaGeralAlunos" class="w-full text-left text-sm text-gray-600 table-fixed">
                 <thead class="bg-gray-50 text-xs text-gray-500 uppercase border-b">
                     <tr>
-                        <th class="p-2">
-                            <div class="flex flex-col gap-1">
-                                <span class="flex items-center gap-2">Aluno <button onclick="copiarColuna(0)" class="text-blue-500 text-[10px] lowercase hover:underline">Copiar</button></span>
-                                <input type="text" onkeyup="filtrarColunaTabela(0)" placeholder="Filtrar..." class="border p-1 rounded text-xs w-full font-normal">
-                            </div>
-                        </th>
-                        <th class="p-2">
-                            <div class="flex flex-col gap-1">
-                                <span class="flex items-center gap-2">Turma <button onclick="copiarColuna(1)" class="text-blue-500 text-[10px] lowercase hover:underline">Copiar</button></span>
-                                <input type="text" onkeyup="filtrarColunaTabela(1)" placeholder="Filtrar..." class="border p-1 rounded text-xs w-full font-normal">
-                            </div>
-                        </th>
-                        <th class="p-2">
-                            <div class="flex flex-col gap-1">
-                                <span class="flex items-center gap-2">Período <button onclick="copiarColuna(2)" class="text-blue-500 text-[10px] lowercase hover:underline">Copiar</button></span>
-                                <input type="text" onkeyup="filtrarColunaTabela(2)" placeholder="Filtrar..." class="border p-1 rounded text-xs w-full font-normal">
-                            </div>
-                        </th>
-                        <th class="p-2">
-                            <div class="flex flex-col gap-1">
-                                <span class="flex items-center gap-2">Presente <button onclick="copiarColuna(3)" class="text-blue-500 text-[10px] lowercase hover:underline">Copiar</button></span>
-                                <input type="text" onkeyup="filtrarColunaTabela(3)" placeholder="Filtrar..." class="border p-1 rounded text-xs w-full font-normal">
-                            </div>
-                        </th>
-                        <th class="p-2">
-                            <div class="flex flex-col gap-1">
-                                <span class="flex items-center gap-2">Justificativa <button onclick="copiarColuna(4)" class="text-blue-500 text-[10px] lowercase hover:underline">Copiar</button></span>
-                                <input type="text" onkeyup="filtrarColunaTabela(4)" placeholder="Filtrar..." class="border p-1 rounded text-xs w-full font-normal">
-                            </div>
-                        </th>
+                        <th class="p-2 w-[25%]"><input type="text" onkeyup="filtrarColunaTabela(0)" placeholder="Filtrar Aluno..." class="border p-1.5 rounded text-xs w-full font-normal"></th>
+                        <th class="p-2 w-[15%]"><input type="text" onkeyup="filtrarColunaTabela(1)" placeholder="Filtrar Turma..." class="border p-1.5 rounded text-xs w-full font-normal"></th>
+                        <th class="p-2 w-[15%]"><input type="text" onkeyup="filtrarColunaTabela(2)" placeholder="Filtrar Período..." class="border p-1.5 rounded text-xs w-full font-normal"></th>
+                        <th class="p-2 w-[15%]"><input type="text" onkeyup="filtrarColunaTabela(3)" placeholder="Filtrar Presença..." class="border p-1.5 rounded text-xs w-full font-normal"></th>
+                        <th class="p-2 w-[30%]"><input type="text" onkeyup="filtrarColunaTabela(4)" placeholder="Filtrar Justificativa..." class="border p-1.5 rounded text-xs w-full font-normal"></th>
                     </tr>
                 </thead>
                 <tbody id="tbody_geral" class="divide-y divide-gray-100"></tbody>
@@ -172,122 +176,135 @@
 
 <script>
     let chartMensal, chartTurma;
+    const mapaMeses = { 'Jan': '1', 'Janeiro': '1', 'Fev': '2', 'Fevereiro': '2', 'Mar': '3', 'Março': '3', 'Abr': '4', 'Abril': '4', 'Mai': '5', 'Maio': '5', 'Jun': '6', 'Junho': '6', 'Jul': '7', 'Julho': '7', 'Ago': '8', 'Agosto': '8', 'Set': '9', 'Setembro': '9', 'Out': '10', 'Outubro': '10', 'Nov': '11', 'Novembro': '11', 'Dez': '12', 'Dezembro': '12' };
+    const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const nomesMesesLongos = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    
+    const anoAtualSistema = new Date().getFullYear();
+    const anoAnteriorSistema = anoAtualSistema - 1;
 
-    document.querySelectorAll('.qlik-filter').forEach(element => {
-        element.addEventListener('change', carregarDadosDashboard);
-        element.addEventListener('keyup', carregarDadosDashboard);
+    document.addEventListener("DOMContentLoaded", function() {
+        const itemAtual = document.getElementById('qlik_ano_atual');
+        const itemAnterior = document.getElementById('qlik_ano_anterior');
+
+        if (itemAtual && itemAnterior) {
+            itemAtual.setAttribute('data-value', anoAtualSistema.toString());
+            itemAtual.querySelector('span').innerText = anoAtualSistema.toString();
+            itemAnterior.setAttribute('data-value', anoAnteriorSistema.toString());
+            itemAnterior.querySelector('span').innerText = anoAnteriorSistema.toString();
+        }
+
+        // PREENCHE COM A DATA ATUAL DO SISTEMA (HOJE)
+        const campoData = document.getElementById('filtro_data');
+        const hoje = new Date().toISOString().split('T')[0];
+        campoData.value = hoje;
+
+        carregarDadosDashboard();
     });
+    
+    function toggleListbox(event, id) {
+        event.stopPropagation();
+        const menuAlvo = document.getElementById(id);
+        const estaAberto = menuAlvo.classList.contains("show-listbox");
+        
+        document.querySelectorAll('.qlik-listbox-menu').forEach(m => m.classList.remove('show-listbox'));
+        if (!estaAberto) menuAlvo.classList.add("show-listbox");
+    }
+
+    window.onclick = function(event) {
+        if (!event.target.closest('.qlik-listbox-container')) {
+            document.querySelectorAll('.qlik-listbox-menu').forEach(m => m.classList.remove('show-listbox'));
+        }
+    }
+
+    function filtrarItensMenu(inputElement) {
+        const filter = inputElement.value.toUpperCase();
+        const menu = inputElement.closest('.qlik-listbox-menu');
+        const items = menu.querySelectorAll('.qlik-option-item');
+        items.forEach(item => {
+            const text = item.querySelector('span').textContent || item.querySelector('span').innerText;
+            item.style.display = text.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+        });
+    }
+
+    function selecionarOpcaoQlik(element) {
+        element.classList.toggle("selected");
+        const icon = element.querySelector('.check-icon');
+        if (element.classList.contains("selected")) { icon.classList.remove("hidden"); } else { icon.classList.add("hidden"); }
+        
+        const type = element.closest('.qlik-options-holder').getAttribute('data-filter-type');
+        atualizarTextoBotao(type);
+        carregarDadosDashboard();
+    }
+
+    function coletarValoresAtivos(filterType) {
+        const holder = document.querySelector(`[data-filter-type="${filterType}"]`);
+        if (!holder) return '';
+        let selecionados = [];
+        holder.querySelectorAll('.qlik-option-item.selected').forEach(item => selecionados.push(item.getAttribute('data-value')));
+        return selecionados.join(',');
+    }
+
+    function atualizarTextoBotao(type) {
+        const holder = document.querySelector(`[data-filter-type="${type}"]`);
+        const count = holder.querySelectorAll('.qlik-option-item.selected').length;
+        const btnMap = { 'ano': 'btn_ano', 'mes': 'btn_mes', 'turma': 'btn_turma', 'periodo': 'btn_periodo' };
+        document.getElementById(btnMap[type]).querySelector('span').innerText = count > 0 ? `${count} sel.` : 'Todos';
+    }
+
+    document.getElementById('filtro_aluno').addEventListener('input', carregarDadosDashboard);
+    document.getElementById('filtro_data').addEventListener('change', carregarDadosDashboard);
 
     function carregarDadosDashboard() {
-        const ano = document.getElementById('filtro_ano').value;
-        const mes = document.getElementById('filtro_mes').value;
-        const turma = document.getElementById('filtro_turma').value;
-        const periodo = document.getElementById('filtro_periodo').value;
-        const aluno = document.getElementById('filtro_aluno').value;
-        const data = document.getElementById('filtro_data').value;
+        const dataFiltrada = document.getElementById('filtro_data').value;
+        const url = `{% url 'dados_dashboard' %}?anos=${coletarValoresAtivos('ano')}&meses=${coletarValoresAtivos('mes')}&turmas=${coletarValoresAtivos('turma')}&periodos=${coletarValoresAtivos('periodo')}&aluno=${document.getElementById('filtro_aluno').value}&data=${dataFiltrada}`;
+        
+        fetch(url).then(res => res.json()).then(data => {
+            document.getElementById('kpi_presenca').innerText = data.taxa_presenca + '%';
+            document.getElementById('kpi_falta').innerText = data.taxa_falta + '%';
+            document.getElementById('kpi_total').innerText = data.total_alunos;
+            document.getElementById('kpi_risco').innerText = data.alunos_risco;
 
-        const url = "{% url 'dados_dashboard' %}?ano=" + ano + "&mes=" + mes + "&turma=" + turma + "&periodo=" + periodo + "&aluno=" + aluno + "&data=" + data;
+            let mesesAtivos = [];
+            document.querySelectorAll('[data-filter-type="mes"] .qlik-option-item.selected').forEach(item => mesesAtivos.push(parseInt(item.getAttribute('data-value'))));
 
-        fetch(url)
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error('Erro na requisição do dashboard');
-                }
-                return res.json();
-            })
-            .then(data => {
-                // Atualiza KPIs
-                document.getElementById('kpi_presenca').innerText = data.taxa_presenca + '%';
-                document.getElementById('kpi_falta').innerText = data.taxa_falta + '%';
-                document.getElementById('kpi_total').innerText = data.total_alunos;
-                document.getElementById('kpi_risco').innerText = data.alunos_risco;
-
-                // Atualiza Gráfico Mensal
+            if (mesesAtivos.length > 0) {
+                chartMensal.data.labels = mesesAtivos.map(m => nomesMeses[m - 1]);
+                chartMensal.data.datasets[0].data = mesesAtivos.map(m => data.evolucao_mensal[m - 1]);
+            } else {
+                chartMensal.data.labels = nomesMeses;
                 chartMensal.data.datasets[0].data = data.evolucao_mensal;
-                chartMensal.update();
+            }
+            chartMensal.update();
+            chartTurma.data.labels = data.labels_turmas;
+            chartTurma.data.datasets[0].data = data.pct_faltas_turmas;
+            chartTurma.update();
 
-                // Atualiza Gráfico Turma
-                chartTurma.data.labels = data.labels_turmas;
-                chartTurma.data.datasets[0].data = data.pct_faltas_turmas;
-                chartTurma.update();
+            document.getElementById('tbody_top10').innerHTML = data.top_10_faltantes.map(i => `<tr class="hover:bg-gray-50 border-b"><td class="py-3 px-4 font-medium text-gray-800">${i.aluno_nome}</td><td>${i.turma_nome}</td><td>${i.periodo}</td><td class="text-center text-red-500 font-bold">${i.total_faltas}</td></tr>`).join('') || '<tr><td colspan="4" class="p-4 text-center">Sem ocorrências</td></tr>';
 
-                // Atualiza Top 10
-                const tbodyTop = document.getElementById('tbody_top10');
-                tbodyTop.innerHTML = data.top_10_faltantes.map(i => `
-                    <tr class="hover:bg-gray-50"><td class="py-2 px-4 font-medium">${i.aluno_nome}</td><td class="py-2 px-4">${i.turma_nome}</td><td class="py-2 px-4">${i.periodo}</td><td class="py-2 px-4 text-center text-red-500 font-bold">${i.total_faltas}</td></tr>
-                `).join('') || '<tr><td colspan="4" class="p-4 text-center text-gray-400">Sem ocorrências</td></tr>';
+            const f = data.funil;
+            document.getElementById('container_funil').innerHTML = `<div class="w-full flex flex-col items-center"><div class="bg-blue-600 text-white text-xs font-bold py-2 rounded text-center w-[100%]">Total Matriculados: ${f.total}</div><div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[8px] border-t-blue-600"></div><div class="bg-yellow-500 text-white text-xs font-bold py-2 rounded text-center w-[85%] mt-1">Alerta Prévio: ${f.alerta}</div><div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[8px] border-t-yellow-500"></div><div class="bg-orange-500 text-white text-xs font-bold py-2 rounded text-center w-[70%] mt-1">Em Risco Médio: ${f.risco}</div><div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[8px] border-t-orange-500"></div><div class="bg-red-500 text-white text-xs font-bold py-2 rounded text-center w-[55%] mt-1">Crítico Acentuado: ${f.critico}</div><div class="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[8px] border-t-red-500"></div><div class="bg-red-800 text-white text-xs font-bold py-2 rounded text-center w-[40%] mt-1">Abandono Próximo: ${f.evasao}</div></div>`;
 
-                // Atualiza Funil Real (CSS baseado na proporção matemática real)
-                const f = data.funil;
-                const maxVal = Math.max(f.total, f.alerta, f.risco, f.critico, f.evasao) || 1;
-                document.getElementById('container_funil').innerHTML = `
-                    <div class="bg-[#1E5BB8] text-white font-bold text-center py-2 rounded shadow-sm transition-all" style="width: ${(f.total/maxVal)*100}%">Total: ${f.total}</div>
-                    <div class="bg-orange-400 text-white font-bold text-center py-2 rounded shadow-sm transition-all" style="width: ${(f.alerta/maxVal)*100}%">Alerta: ${f.alerta}</div>
-                    <div class="bg-orange-600 text-white font-bold text-center py-2 rounded shadow-sm transition-all" style="width: ${(f.risco/maxVal)*100}%">Risco: ${f.risco}</div>
-                    <div class="bg-red-500 text-white font-bold text-center py-2 rounded shadow-sm transition-all" style="width: ${(f.critico/maxVal)*100}%">Crítico: ${f.critico}</div>
-                    <div class="bg-red-700 text-white font-bold text-center py-2 rounded shadow-sm transition-all" style="width: ${(f.evasao/maxVal)*100}%">Evasão: ${f.evasao}</div>
-                `;
-
-                // Atualiza Tabela Geral Inferior
-                const tbodyGeral = document.getElementById('tbody_geral');
-                tbodyGeral.innerHTML = data.tabela_alunos.map(a => `
-                    <tr class="hover:bg-gray-50 border-b"><td class="p-2 font-medium">${a.aluno}</td><td class="p-2">${a.turma}</td><td class="p-2">${a.periodo}</td><td class="p-2">${a.presente}</td><td class="p-2">${a.justificativa}</td></tr>
-                `).join('') || '<tr><td colspan="5" class="p-4 text-center text-gray-400">Nenhum registro nesta data.</td></tr>';
-            });
+            // Mostra somente os dados da data filtrada ao lado do Excel
+            document.getElementById('tbody_geral').innerHTML = data.tabela_alunos.map(a => `<tr class="hover:bg-gray-50 border-b"><td class="p-2 font-medium text-gray-800">${a.aluno}</td><td>${a.turma}</td><td>${a.periodo}</td><td><span class="px-2 py-0.5 rounded text-xs font-bold ${a.presente === 'Sim' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${a.presente}</span></td><td class="text-xs text-gray-500 italic">${a.justificativa || '-'}</td></tr>`).join('') || '<tr><td colspan="5" class="p-4 text-center text-gray-400">Nenhum registro de chamada encontrado para esta data.</td></tr>';
+        });
     }
 
-    // Inicialização dos Gráficos vazios
     const ctxM = document.getElementById('chartPresencaMensal').getContext('2d');
-    chartMensal = new Chart(ctxM, { type: 'bar', data: { labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'], datasets: [{ label: 'Presença %', data: [], backgroundColor: '#58B947', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false } });
+    chartMensal = new Chart(ctxM, { type: 'bar', data: { labels: nomesMeses, datasets: [{ label: 'Presença Média %', data: [], backgroundColor: '#58B947', hoverBackgroundColor: '#1E5BB8', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100 } }, onClick: (e, elements) => { if (elements.length > 0) { const labelClicada = chartMensal.data.labels[elements[0].index]; const valorMes = mapaMeses[labelClicada]; document.querySelectorAll('[data-filter-type="mes"] .qlik-option-item').forEach(item => { if (item.getAttribute('data-value') === valorMes) { item.classList.toggle("selected"); const icon = item.querySelector('.check-icon'); if (item.classList.contains("selected")) { icon.classList.remove("hidden"); } else { icon.classList.add("hidden"); } } }); atualizarTextoBotao('mes'); carregarDadosDashboard(); } } } });
 
     const ctxT = document.getElementById('chartFaltasTurma').getContext('2d');
-    chartTurma = new Chart(ctxT, { type: 'bar', data: { labels: [], datasets: [{ label: '% de Faltas', data: [], backgroundColor: ['#58B947','#F59E0B','#1E5BB8','#EF4444'], borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false } });
+    chartTurma = new Chart(ctxT, { type: 'bar', data: { labels: [], datasets: [{ label: '% de Faltas', data: [], backgroundColor: '#1E5BB8', hoverBackgroundColor: '#58B947', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, onClick: (e, elements) => { if (elements.length > 0) { const nomeTurmaClicada = chartTurma.data.labels[elements[0].index]; document.querySelectorAll('[data-filter-type="turma"] .qlik-option-item').forEach(item => { if (item.getAttribute('data-value') === nomeTurmaClicada) { item.classList.toggle("selected"); const icon = item.querySelector('.check-icon'); if (item.classList.contains("selected")) { icon.classList.remove("hidden"); } else { icon.classList.add("hidden"); } } }); atualizarTextoBotao('turma'); carregarDadosDashboard(); } } } });
 
-    // Executa a primeira carga automática ao abrir a tela
-    window.onload = carregarDadosDashboard;
-
-    // Filtros por coluna na Tabela
     function filtrarColunaTabela(indexColuna) {
-        const input = document.querySelectorAll('#tabelaGeralAlunos thead input')[indexColuna];
-        const filter = input.value.toUpperCase();
-        const rows = document.querySelectorAll('#tbody_geral tr');
-        
-        rows.forEach(row => {
+        const filter = document.querySelectorAll('#tabelaGeralAlunos thead input')[indexColuna].value.toUpperCase();
+        document.querySelectorAll('#tbody_geral tr').forEach(row => {
             const cell = row.getElementsByTagName('td')[indexColuna];
-            if (cell) {
-                const text = cell.textContent || cell.innerText;
-                row.style.display = text.toUpperCase().indexOf(filter) > -1 ? "" : "none";
-            }
+            if (cell) row.style.display = (cell.textContent || cell.innerText).toUpperCase().indexOf(filter) > -1 ? "" : "none";
         });
     }
 
-    // Função para Copiar Coluna Completa
-    function copiarColuna(indexColuna) {
-        const rows = document.querySelectorAll('#tbody_geral tr');
-        let valores = [];
-        rows.forEach(row => {
-            const cell = row.getElementsByTagName('td')[indexColuna];
-            if (cell && row.style.display !== "none") {
-                valores.push(cell.innerText.strip || cell.innerText);
-            }
-        });
-        navigator.clipboard.writeText(valores.join('\n'));
-        alert('Coluna copiada para a área de transferência!');
-    }
-
-    // EXPORTADORES CLIENT-SIDE
-    function exportarExcel() {
-        const table = document.getElementById("tabelaGeralAlunos");
-        const wb = XLSX.utils.table_to_book(table, {sheet: "Frequencia"});
-        XLSX.writeFile(wb, "Frequencia_Alunos.xlsx");
-    }
-
-    function exportarPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        doc.text("Relatorio de Frequencia - Conecta Presenca", 14, 15);
-        doc.autoTable({ html: '#tabelaGeralAlunos', startY: 20 });
-        doc.save('Frequencia_Alunos.pdf');
-    }
+    function exportarExcel() { XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById("tabelaGeralAlunos"), {sheet: "Frequencia"}), "Relatorio_Frequencia.xlsx"); }
+    function exportarPDF() { const doc = new window.jspdf.jsPDF('p', 'mm', 'a4'); doc.text("Conecta Presenca - Lista Geral de Alunos", 14, 15); doc.autoTable({ html: '#tabelaGeralAlunos', startY: 22, styles: { fontSize: 8 }, columns: [0, 1, 2, 3, 4] }); doc.save('Frequencia_Alunos_Filtrados.pdf'); }
 </script>
 {% endblock %}

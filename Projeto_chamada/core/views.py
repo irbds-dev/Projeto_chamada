@@ -6,6 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth            import authenticate, login
 from django.contrib                 import messages
 from django.http                    import JsonResponse
+from django.utils.timezone          import make_aware, get_current_timezone
+import datetime
 
 
 # 1. TELA DE SELEÇÃO DE TURMAS
@@ -147,55 +149,68 @@ def analises(request):
 
 @login_required
 def dados_dashboard(request):
-    # 1. Filtros Globais recebidos via AJAX
-    filtro_ano = request.GET.get('ano')
-    filtro_mes = request.GET.get('mes')
-    filtro_turma = request.GET.get('turma')
-    filtro_periodo = request.GET.get('periodo')
-    filtro_aluno = request.GET.get('aluno')
-    filtro_data = request.GET.get('data')
+    # 1. Captura as variáveis dos filtros
+    filtro_anos = request.GET.get('anos', '')
+    filtro_meses = request.GET.get('meses', '')
+    filtro_turmas = request.GET.get('turmas', '')
+    filtro_periodos = request.GET.get('periodos', '')
+    filtro_aluno = request.GET.get('aluno', '').strip()
+    filtro_data = request.GET.get('data', '')
 
-    # Se nenhum filtro veio e existem registros, define o ponto de partida do banco de dados
-    if not any([filtro_ano, filtro_mes, filtro_turma, filtro_periodo, filtro_aluno, filtro_data]):
-        try:
-            primeira = Chamada.objects.earliest('data')
-            filtro_ano = str(primeira.data.year)
-            filtro_mes = str(primeira.data.month)
-            filtro_data = primeira.data.strftime('%Y-%m-%d')
-        except Chamada.DoesNotExist:
-            pass
+    # Se nenhuma data vier (fallback de contingência), assume o dia atual
+    if not filtro_data:
+        filtro_data = timezone.localdate().strftime('%Y-%m-%d')
 
-    # Querysets Base
+    # Querysets isolados para tratamento cruzado
     chamadas_qs = Chamada.objects.select_related('id_aluno', 'id_turma').all()
     alunos_qs = Aluno.objects.all()
 
-    # 2. Aplicação Estrita dos Filtros Dinâmicos
-    if filtro_ano:
-        chamadas_qs = chamadas_qs.filter(data__year=filtro_ano)
-    if filtro_mes:
-        chamadas_qs = chamadas_qs.filter(data__month=filtro_mes)
-    if filtro_turma:
-        chamadas_qs = chamadas_qs.filter(id_turma__nome=filtro_turma)
-        alunos_qs = alunos_qs.filter(id_turma__nome=filtro_turma)
-    if filtro_periodo:
-        chamadas_qs = chamadas_qs.filter(id_turma__periodo=filtro_periodo)
-        alunos_qs = alunos_qs.filter(id_turma__periodo=filtro_periodo)
+    # Convertendo a string em objeto date para evitar conflitos de fuso horário/timezone do banco
+    try:
+        data_objeto = datetime.datetime.strptime(filtro_data, '%Y-%m-%d').date()
+    except ValueError:
+        data_objeto = timezone.localdate()
+
+    # FILTRO INDIVIDUAL DE DIA OBLIGATÓRIO (Métricas e Tabela restritas a este dia)
+    chamadas_dia_qs = chamadas_qs.filter(data__date=data_objeto)
+
+    # 2. Aplicação cumulativa dos multi-filtros estilo caixas do Qlik Sense
+    if filtro_anos:
+        lista_anos = filtro_anos.split(',')
+        chamadas_dia_qs = chamadas_dia_qs.filter(data__year__in=lista_anos)
+        chamadas_qs = chamadas_qs.filter(data__year__in=lista_anos)
+        
+    if filtro_meses:
+        lista_meses = filtro_meses.split(',')
+        chamadas_dia_qs = chamadas_dia_qs.filter(data__month__in=lista_meses)
+        chamadas_qs = chamadas_qs.filter(data__month__in=lista_meses)
+        
+    if filtro_turmas:
+        lista_turmas = filtro_turmas.split(',')
+        chamadas_dia_qs = chamadas_dia_qs.filter(id_turma__nome__in=lista_turmas)
+        chamadas_qs = chamadas_qs.filter(id_turma__nome__in=lista_turmas)
+        alunos_qs = alunos_qs.filter(id_turma__nome__in=lista_turmas)
+        
+    if filtro_periodos:
+        lista_periodos = filtro_periodos.split(',')
+        chamadas_dia_qs = chamadas_dia_qs.filter(id_turma__periodo__in=lista_periodos)
+        chamadas_qs = chamadas_qs.filter(id_turma__periodo__in=lista_periodos)
+        alunos_qs = alunos_qs.filter(id_turma__periodo__in=lista_periodos)
+        
     if filtro_aluno:
+        chamadas_dia_qs = chamadas_dia_qs.filter(id_aluno__nome__icontains=filtro_aluno)
         chamadas_qs = chamadas_qs.filter(id_aluno__nome__icontains=filtro_aluno)
         alunos_qs = alunos_qs.filter(nome__icontains=filtro_aluno)
-    if filtro_data:
-        chamadas_qs = chamadas_qs.filter(data__date=filtro_data)
 
-    # 3. Métricas Gerais (KPIs)
-    total_alunos_cadastrados = alunos_qs.count()
-    total_registros_chamada = chamadas_qs.count()
-    total_presencas = chamadas_qs.filter(presente=True).count()
-    total_faltas = chamadas_qs.filter(presente=False).count()
+    # 3. Métricas de Frequência calculadas EXCLUSIVAMENTE para a data ativa
+    total_alunos_filtrados = alunos_qs.count()
+    total_chamadas_dia = chamadas_dia_qs.count()
+    total_presencas_dia = chamadas_dia_qs.filter(presente=True).count()
     
-    taxa_presenca = round((total_presencas / total_registros_chamada * 100), 1) if total_registros_chamada > 0 else 0
-    taxa_falta = round(100 - taxa_presenca, 1) if total_registros_chamada > 0 else 0
+    taxa_presenca = round((total_presencas_dia / total_chamadas_dia * 100), 1) if total_chamadas_dia > 0 else 0
+    taxa_falta = round(100 - taxa_presenca, 1) if total_chamadas_dia > 0 else 0
 
-    # 4. Evolução Mensal de Presença
+    # 4. Evolução Histórica Anual Mensal (Reage aos combos colaterais, mas ignora a trava do dia)
     evolucao_mensal = []
     for mes_idx in range(1, 13):
         qs_mes = chamadas_qs.filter(data__month=mes_idx)
@@ -205,56 +220,54 @@ def dados_dashboard(request):
         else:
             evolucao_mensal.append(0)
 
-    # 5. Top 10 Alunos Faltantes
+    # 5. Top 10 Alunos Faltantes no Histórico Geral sob o filtro estrutural
     top_10 = chamadas_qs.filter(presente=False).values(
         'id_aluno__nome', 'id_turma__nome', 'id_turma__periodo'
     ).annotate(total_faltas=Count('id_aluno')).order_by('-total_faltas')[:10]
     
     top_10_list = [{
-        'aluno_nome': item['id_aluno__nome'],
-        'turma_nome': item['id_turma__nome'],
-        'periodo': item['id_turma__periodo'],
+        'aluno_nome': item['id_aluno__nome'] or 'Desconhecido',
+        'turma_nome': item['id_turma__nome'] or 'N/A',
+        'periodo': item['id_turma__periodo'] or 'N/A',
         'total_faltas': item['total_faltas']
     } for item in top_10]
 
-    # 6. Distribuição do Funil de Risco
+    # 6. Distribuição Acumulada do Funil de Risco Anual
     comportamento = chamadas_qs.values('id_aluno').annotate(faltas=Count('id_aluno', filter=Q(presente=False)))
     alerta = sum(1 for a in comportamento if 3 <= a['faltas'] < 6)
     risco = sum(1 for a in comportamento if 6 <= a['faltas'] < 10)
     critico = sum(1 for a in comportamento if 10 <= a['faltas'] < 15)
     evasao = sum(1 for a in comportamento if a['faltas'] >= 15)
 
-    # 7. Faltas por Turma
-    faltas_turma_raw = chamadas_qs.values('id_turma__nome').annotate(
+    # 7. Desempenho Percentual do dia por Turmas
+    faltas_turma_raw = chamadas_dia_qs.values('id_turma__nome').annotate(
         total=Count('id_aluno'), faltas=Count('id_aluno', filter=Q(presente=False))
-    )
+    ).order_by('id_turma__nome')
+    
     labels_turmas = [t['id_turma__nome'] for t in faltas_turma_raw if t['id_turma__nome']]
     pct_faltas_turmas = [
         round((t['faltas'] / t['total']) * 100, 1) if t['total'] > 0 else 0 for t in faltas_turma_raw if t['id_turma__nome']
     ]
 
-    # 8. Lista Geral de Alunos (Tabela Final)
-    # A tabela inferior traz apenas os registros correspondentes ao filtro_data ativo
+    # 8. Lista Geral de Alunos — Restrita Estritamente ao Dia Filtrado
     tabela_alunos = []
-    if filtro_data:
-        chamadas_dia = chamadas_qs.filter(data__date=filtro_data)
-        for c in chamadas_dia:
-            tabela_alunos.append({
-                'aluno': c.id_aluno.nome if c.id_aluno else 'N/A',
-                'turma': c.id_turma.nome if c.id_turma else 'N/A',
-                'periodo': c.id_turma.periodo if c.id_turma else 'N/A',
-                'presente': 'Sim' if c.presente else 'Não',
-                'justificativa': c.justificativa or ''
-            })
+    for c in chamadas_dia_qs.order_by('id_aluno__nome'):
+        tabela_alunos.append({
+            'aluno': c.id_aluno.nome if c.id_aluno else 'N/A',
+            'turma': c.id_turma.nome if c.id_turma else 'N/A',
+            'periodo': c.id_turma.periodo if c.id_turma else 'N/A',
+            'presente': 'Sim' if c.presente else 'Não',
+            'justificativa': c.justificativa or ''
+        })
 
     return JsonResponse({
         'taxa_presenca': taxa_presenca,
         'taxa_falta': taxa_falta,
-        'total_alunos': total_alunos_cadastrados,
+        'total_alunos': total_alunos_filtrados,
         'alunos_risco': critico + evasao,
         'evolucao_mensal': evolucao_mensal,
         'top_10_faltantes': top_10_list,
-        'funil': {'total': total_alunos_cadastrados, 'alerta': alerta, 'risco': risco, 'critico': critico, 'evasao': evasao},
+        'funil': {'total': total_alunos_filtrados, 'alerta': alerta, 'risco': risco, 'critico': critico, 'evasao': evasao},
         'labels_turmas': labels_turmas,
         'pct_faltas_turmas': pct_faltas_turmas,
         'tabela_alunos': tabela_alunos

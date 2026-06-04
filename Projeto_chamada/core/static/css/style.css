@@ -51,3 +51,72 @@ body {
     background: white;
     border-radius: 12px;
 }
+
+/* ==========================================================================
+   CAIXAS DE LISTAGEM (SELEÇÃO MÚLTIPLA)
+   ========================================================================== */
+.qlik-listbox-container {
+        position: relative;
+        display: inline-block;
+    }
+
+    .qlik-listbox-menu {
+        display: none; 
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background-color: #ffffff;
+        min-width: 220px;
+        max-height: 280px;
+        overflow-y: auto;
+        box-shadow: 0px 8px 24px rgba(0,0,0,0.15);
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        z-index: 9999;
+        padding: 4px 0;
+        margin-top: 4px;
+    }
+
+    .qlik-search-wrapper {
+        padding: 6px 8px;
+        border-bottom: 1px solid #f1f5f9;
+        position: sticky;
+        top: 0;
+        background: #ffffff;
+        z-index: 20;
+    }
+
+    .qlik-search-input {
+        width: 100%;
+        padding: 6px 8px 6px 28px;
+        font-size: 0.85rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        outline: none;
+    }
+
+    .qlik-option-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 14px;
+        font-size: 0.875rem;
+        color: #334155;
+        cursor: pointer;
+        background-color: #ffffff;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .qlik-option-item:hover {
+        background-color: #f8fafc;
+    }
+
+    .qlik-option-item.selected {
+        background-color: #58B947 !important;
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+
+    .show-listbox {
+        display: block !important;
+    }
