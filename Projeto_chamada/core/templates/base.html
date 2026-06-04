@@ -40,14 +40,15 @@
                 </div>
             {% endif %}
             {% if user.is_authenticated %}
-            <form action="{% url 'logout' %}" method="post" class="inline">
-                {% csrf_token %}
-                <button type="submit" class="text-red-500 font-medium hover:underline">
-                    Sair
-                </button>
-            {% else %}
-                <a href="{% url 'login' %}">Login</a>    
-            </form>
+                <form action="{% url 'logout' %}" method="post" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="text-red-500 font-medium hover:underline">
+                        Sair
+                    </button>
+                </form> {% else %}
+                <a href="{% url 'login' %}" class="text-[#1E5BB8] font-medium hover:underline">
+                    Login
+                </a>    
             {% endif %}
         </div>
     </nav>

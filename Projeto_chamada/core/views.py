@@ -83,6 +83,7 @@ def realizar_chamada(request, id_turma):
 
 # 3. EDITAR CHAMADA
 @login_required
+@permission_required('core.change_chamada', raise_exception=True)
 def editarChamada(request):
     hoje = timezone.now().date()
     turmas = Turma.objects.all()
@@ -122,6 +123,7 @@ def editarChamada(request):
 # 4. TELA DE ANÁLISES (Dashboard BI)
 # =====================================================================
 @login_required
+@permission_required('core.view_chamada', raise_exception=True)
 def analises(request):
     turmas_disponiveis = Turma.objects.values_list('nome', flat=True).distinct().order_by('nome')
     periodos_disponiveis = Turma.objects.values_list('periodo', flat=True).distinct().order_by('periodo')
@@ -263,15 +265,19 @@ def dados_dashboard(request):
         'tabela_alunos': tabela_alunos
     })
 
+"""
 # 5. TELA DE GESTÃO DE CADASTROS
+@permission_required('core.add_aluno', raise_exception=True)
 @login_required
 def cadastroAluno(request):
     alunos = Aluno.objects.all().order_by('-data')[:10] 
     turmas = Turma.objects.all()
     return render(request, 'cadastroAluno.html', {'alunos': alunos, 'turmas': turmas})
+"""
 
 # 6. CADASTRA TURMA
 @login_required
+@permission_required('core.add_turma', raise_exception=True)
 def cadastroTurma(request):
     turmas = Turma.objects.all().order_by('-data')
 
@@ -301,6 +307,7 @@ def cadastroTurma(request):
 
 # 7. CADASTRO ALUNO
 @login_required
+@permission_required('core.add_aluno', raise_exception=True)
 def cadastroAluno(request):
     turmas = Turma.objects.all().order_by('nome')
     turma_filtrada_id = request.GET.get('id_turma', '').strip()
@@ -332,13 +339,6 @@ def cadastroAluno(request):
         'alunos': alunos,
         'turma_filtrada_id': turma_filtrada_id
     })
-
-# 8. 
-@login_required
-def controle(request):
-    chamadas = Chamada.objects.all().order_by('-data')[:5]
-    turmas = Turma.objects.all()
-    return render(request, 'controle.html', {'turmas': turmas, 'chamadas': chamadas})
 
 # 8. TELA DE LOGIN
 def login_view(request):
