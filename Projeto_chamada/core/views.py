@@ -9,6 +9,8 @@ from django.http                    import JsonResponse
 from django.utils.timezone          import make_aware, get_current_timezone
 import datetime
 from django.shortcuts               import render, redirect, get_object_or_404
+from django.urls import reverse
+import pandas as pd
 
 
 # 1. TELA DE SELEÇÃO DE TURMAS
@@ -285,7 +287,7 @@ def dados_dashboard(request):
 @login_required
 @permission_required('core.add_turma', raise_exception=True)
 def cadastroTurma(request):
-    # --- NOVO: Captura o ID da turma se o usuário clicou no lápis ✏️ ---
+    # --- CAPTURA TURMA PARA EDIÇÃO ---
     turma_id_editar = request.GET.get('editar', '').strip()
     turma_para_editar = None
     if turma_id_editar:
@@ -295,43 +297,99 @@ def cadastroTurma(request):
     turmas = Turma.objects.all().order_by('-data')
 
     if request.method == 'POST':
-        nome_input = request.POST.get('new_turma')
-        Periodo_turma = request.POST.get('Periodo_turma')
+        # --- CASO A: IMPORTAÇÃO DE EXCEL/CSV ---
+        if request.POST.get('action') == 'importar_excel':
+            arquivo = request.FILES.get('arquivo_excel')
+            
+            if not arquivo:
+                messages.error(request, "Nenhum arquivo foi enviado.")
+                return redirect('cadastroTurma')
 
-        if nome_input and Periodo_turma:
-            if turma_para_editar:
-                # --- NOVO: Lógica de Atualização ---
-                # Verifica se o novo nome/período já não pertence a OUTRA turma para não duplicar por engano
-                duplicado = Turma.objects.filter(nome=nome_input, periodo=Periodo_turma).exclude(pk=turma_para_editar.pk).exists()
-                if not duplicado:
-                    turma_para_editar.nome = nome_input
-                    turma_para_editar.periodo = Periodo_turma
-                    turma_para_editar.updated_at = timezone.now()
-                    turma_para_editar.save()
-                    messages.success(request, f"Turma {nome_input} atualizada com sucesso!")
+            try:
+                # Lê CSV ou Excel nativo
+                if arquivo.name.endswith('.csv'):
+                    df = pd.read_csv(arquivo)
                 else:
-                    messages.error(request, f"Já existe outra turma cadastrada com o nome {nome_input} nesse período.")
-            else:
-                # --- Lógica de Criação Original ---
-                registro = Turma.objects.filter(nome=nome_input, periodo=Periodo_turma).count()
-                if registro == 0:
-                    Turma.objects.create(
-                        nome=nome_input,
-                        periodo=Periodo_turma,
-                        data=timezone.now(),
-                        updated_at=timezone.now()
-                    )
-                    messages.success(request, f"Turma {nome_input} cadastrada com sucesso!")
-                else:
-                    messages.error(request, f"Turma {nome_input} já cadastrada anteriormente!")
+                    df = pd.read_excel(arquivo)
+
+                # Normaliza o nome das colunas para minúsculo
+                df.columns = [str(col).strip().lower() for col in df.columns]
+
+                if 'nome' not in df.columns or 'periodo' not in df.columns:
+                    messages.error(request, "A planilha deve conter exatamente as colunas 'nome' e 'periodo'.")
+                    return redirect('cadastroTurma')
+
+                turmas_criadas = 0
+                turmas_duplicadas = 0
+
+                for index, row in df.iterrows():
+                    nome_turma = str(row['nome']).strip()
+                    # Capitaliza a primeira letra do período (ex: diurno -> Diurno) para manter seu padrão
+                    periodo_turma = str(row['periodo']).strip().capitalize()
+
+                    if nome_turma and periodo_turma and nome_turma != 'nan' and periodo_turma != 'nan':
+                        # Validação contra duplicidade exata no banco
+                        existe = Turma.objects.filter(nome__iexact=nome_turma, periodo__iexact=periodo_turma).exists()
+
+                        if not existe:
+                            Turma.objects.create(
+                                nome=nome_turma,
+                                periodo=periodo_turma,
+                                data=timezone.now(),
+                                updated_at=timezone.now()
+                            )
+                            turmas_criadas += 1
+                        else:
+                            turmas_duplicadas += 1
+
+                if turmas_criadas > 0:
+                    messages.success(request, f"{turmas_criadas} turmas foram importadas com sucesso!")
+                if turmas_duplicadas > 0:
+                    messages.warning(request, f"{turmas_duplicadas} turmas foram ignoradas por já estarem cadastradas.")
+
+            except Exception as e:
+                messages.error(request, f"Erro ao ler arquivo: {str(e)}")
             
             return redirect('cadastroTurma')
+
+        # --- CASO B: FORMULÁRIO INDIVIDUAL (CRIAR OU EDITAR) ---
         else:
-            messages.error(request, "Preencha todos os campos corretamente.")
+            nome_input = request.POST.get('new_turma')
+            Periodo_turma = request.POST.get('Periodo_turma')
+
+            if nome_input and Periodo_turma:
+                if turma_para_editar:
+                    # Lógica de Edição: Evita duplicar o nome com outra turma existente
+                    duplicado = Turma.objects.filter(nome=nome_input, periodo=Periodo_turma).exclude(pk=turma_para_editar.pk).exists()
+                    if not duplicado:
+                        turma_para_editar.nome = nome_input
+                        turma_para_editar.periodo = Periodo_turma
+                        turma_para_editar.updated_at = timezone.now()
+                        turma_para_editar.save()
+                        messages.success(request, f"Turma {nome_input} atualizada com sucesso!")
+                    else:
+                        messages.error(request, f"Já existe outra turma com o nome {nome_input} no período {Periodo_turma}.")
+                else:
+                    # Lógica de Criação Original
+                    registro = Turma.objects.filter(nome=nome_input, periodo=Periodo_turma).count()
+                    if registro == 0:
+                        Turma.objects.create(
+                            nome=nome_input,
+                            periodo=Periodo_turma,
+                            data=timezone.now(),
+                            updated_at=timezone.now()
+                        )
+                        messages.success(request, f"Turma {nome_input} cadastrada com sucesso!")
+                    else:
+                        messages.error(request, f"Turma {nome_input} já cadastrada anteriormente!")
+                
+                return redirect('cadastroTurma')
+            else:
+                messages.error(request, "Preencha todos os campos corretamente.")
 
     return render(request, 'cadastroTurma.html', {
         'turmas': turmas,
-        'turma_para_editar': turma_para_editar  # --- NOVO: Passado para o template ---
+        'turma_para_editar': turma_para_editar
     })
 
 # 6. CADASTRO ALUNO
@@ -341,41 +399,103 @@ def cadastroAluno(request):
     turmas = Turma.objects.all().order_by('nome')
     turma_filtrada_id = request.GET.get('id_turma', '').strip()
 
-    # --- NOVO: Captura o ID do aluno se o usuário clicou no lápis ✏️ ---
+    # --- CAPTURA ALUNO PARA EDIÇÃO ---
     aluno_id_editar = request.GET.get('editar', '').strip()
     aluno_para_editar = None
     if aluno_id_editar:
         aluno_para_editar = get_object_or_404(Aluno, pk=aluno_id_editar)
 
-    # Mantém a sua lógica de listagem e filtro intacta
+    # Mantém sua lógica de filtragem original
     if turma_filtrada_id:
-        alunos = Aluno.objects.filter(id_turma_id=turma_filtrada_id).order_by('-nome')
+        alunos = Aluno.objects.filter(id_turma_id=turma_filtrada_id).order_by('nome')
     else:
-        alunos = Aluno.objects.all().order_by('id_turma')[:10]
+        alunos = Aluno.objects.all().order_by('-id_aluno')[:10]
 
     if request.method == 'POST':
-        nome = request.POST.get('nome')
-        id_turma = request.POST.get('id_turma')
+        # --- CASO A: IMPORTAÇÃO DE EXCEL/CSV ---
+        if request.POST.get('action') == 'importar_excel':
+            arquivo = request.FILES.get('arquivo_excel')
+            
+            if not arquivo:
+                messages.error(request, "Nenhum arquivo foi enviado.")
+                return redirect('cadastroAluno')
 
-        if nome and id_turma:
-            if aluno_para_editar:
-                aluno_para_editar.nome = nome
-                aluno_para_editar.id_turma_id = id_turma
-                aluno_para_editar.updated_at = timezone.now()
-                aluno_para_editar.save()
-                messages.success(request, f"Aluno {nome} atualizado com sucesso!")
-            else:
-                Aluno.objects.create(
-                    nome=nome,
-                    id_turma_id=id_turma,
-                    data=timezone.now(),
-                    updated_at=timezone.now()
-                )
-                messages.success(request, f"Aluno {nome} cadastrado com sucesso!")
+            try:
+                # Lê CSV ou Excel nativo
+                if arquivo.name.endswith('.csv'):
+                    df = pd.read_csv(arquivo)
+                else:
+                    df = pd.read_excel(arquivo)
+
+                # Normaliza o nome das colunas
+                df.columns = [str(col).strip().lower() for col in df.columns]
+
+                if 'nome' not in df.columns or 'turma' not in df.columns or 'periodo' not in df.columns:
+                    messages.error(request, "A planilha deve conter exatamente as colunas 'nome', 'turma' e 'periodo'.")
+                    return redirect('cadastroAluno')
+
+                alunos_criados = 0
+                erros_turma = set()
+
+                for index, row in df.iterrows():
+                    nome_aluno = str(row['nome']).strip()
+                    nome_turma = str(row['turma']).strip()
+                    nome_periodo = str(row['periodo']).strip()
+
+                    if nome_aluno and nome_turma and nome_periodo and nome_aluno != 'nan' and nome_turma != 'nan' and nome_periodo != 'nan':
+                        # Filtra a turma pelo nome ignorando maiúsculas/minúsculas
+                        turma_obj = Turma.objects.filter(nome__iexact=nome_turma, periodo__iexact=nome_periodo).first()
+
+                        if turma_obj:
+                            Aluno.objects.create(
+                                nome=nome_aluno,
+                                id_turma=turma_obj,
+                                data=timezone.now(),
+                                updated_at=timezone.now()
+                            )
+                            alunos_criados += 1
+                        else:
+                            erros_turma.add(nome_aluno)
+
+                if alunos_criados > 0:
+                    messages.success(request, f"{alunos_criados} alunos foram importados com sucesso!")
+                if erros_turma:
+                    messages.warning(request, f"Alunos: {', '.join(erros_turma)}. foram ignorados. Confira se a turma e periodo estão corretos")
+
+            except Exception as e:
+                messages.error(request, f"Erro ao ler arquivo: {str(e)}")
             
             return redirect('cadastroAluno')
+
+        # --- CASO B: FORMULÁRIO INDIVIDUAL (CRIAR OU EDITAR) ---
         else:
-            messages.error(request, "Preencha todos os campos corretamente.")
+            nome = request.POST.get('nome')
+            id_turma = request.POST.get('id_turma')
+
+            if nome and id_turma:
+                if aluno_para_editar:
+                    # Atualiza o registro existente
+                    aluno_para_editar.nome = nome
+                    aluno_para_editar.id_turma_id = id_turma
+                    aluno_para_editar.updated_at = timezone.now()
+                    aluno_para_editar.save()
+                    messages.success(request, f"Aluno {nome} atualizado com sucesso!")
+                else:
+                    # Cria um novo registro do zero
+                    Aluno.objects.create(
+                        nome=nome,
+                        id_turma_id=id_turma,
+                        data=timezone.now(),
+                        updated_at=timezone.now()
+                    )
+                    messages.success(request, f"Aluno {nome} cadastrado com sucesso!")
+                
+                # Preserva o filtro de turma se o usuário já estava nele antes de salvar/editar
+                if turma_filtrada_id:
+                    return redirect(f"{reverse('cadastroAluno')}?id_turma={turma_filtrada_id}")
+                return redirect('cadastroAluno')
+            else:
+                messages.error(request, "Preencha todos os campos corretamente.")
 
     return render(request, 'cadastroAluno.html', {
         'turmas': turmas,
