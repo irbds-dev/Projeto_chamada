@@ -265,17 +265,8 @@ def dados_dashboard(request):
         'tabela_alunos': tabela_alunos
     })
 
-"""
-# 5. TELA DE GESTÃO DE CADASTROS
-@permission_required('core.add_aluno', raise_exception=True)
-@login_required
-def cadastroAluno(request):
-    alunos = Aluno.objects.all().order_by('-data')[:10] 
-    turmas = Turma.objects.all()
-    return render(request, 'cadastroAluno.html', {'alunos': alunos, 'turmas': turmas})
-"""
 
-# 6. CADASTRA TURMA
+# 5. CADASTRA TURMA
 @login_required
 @permission_required('core.add_turma', raise_exception=True)
 def cadastroTurma(request):
@@ -305,7 +296,7 @@ def cadastroTurma(request):
         'turmas': turmas
     })
 
-# 7. CADASTRO ALUNO
+# 6. CADASTRO ALUNO
 @login_required
 @permission_required('core.add_aluno', raise_exception=True)
 def cadastroAluno(request):
@@ -340,7 +331,7 @@ def cadastroAluno(request):
         'turma_filtrada_id': turma_filtrada_id
     })
 
-# 8. TELA DE LOGIN
+# 7. TELA DE LOGIN
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('turmas')
