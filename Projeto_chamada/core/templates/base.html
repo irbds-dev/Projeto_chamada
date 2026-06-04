@@ -9,10 +9,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
-    <nav class="navbar">
+    <nav class="navbar h-16 md:h-16 bg-white shadow-md">
         <div class="flex items-center gap-2">
-            <span class="text-2xl">🎓</span>
-            <span class="font-bold text-[#1E5BB8] text-xl">Conecta Presença</span>
+            <a href="{% url 'turmas' %}" class="hover:opacity-80 transition">
+                <img src="{% static 'images/LogoConectaPresenca.png' %}" alt="Logo Conecta Presença" class="max-h-12 h-auto w-auto">
+            </a>
         </div>
         <div class="hidden md:flex gap-8 font-medium text-gray-600">
             <a href="{% url 'turmas' %}">Turmas</a>
