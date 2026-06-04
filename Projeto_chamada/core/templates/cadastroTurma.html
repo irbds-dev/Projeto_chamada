@@ -1,45 +1,87 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="flex flex-col gap-8">
-    <h1 class="text-3xl font-bold text-[#1E5BB8]">Gestão de Cadastro - Turma</h1>
+    <!-- Título Dinâmico -->
+    <h1 class="text-3xl font-bold text-[#1E5BB8]">
+        {% if turma_para_editar %}⚙️ Editar Cadastro - Turma{% else %}Gestão de Cadastro - Turma{% endif %}
+    </h1>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div class="bg-white p-6 rounded-xl shadow-sm">
-            <h3 class="font-bold mb-4">Nova Turma</h3>
+        <div class="bg-white p-6 rounded-xl shadow-sm border-t-4 {% if turma_para_editar %}border-yellow-500{% else %}border-[#1E5BB8]{% endif %}">
+            
+            <!-- Subtítulo Dinâmico -->
+            <h3 class="font-bold mb-4 italic text-gray-600">
+                {% if turma_para_editar %}✏️ Modificando: {{ turma_para_editar.nome }}{% else %}Nova Turma{% endif %}
+            </h3>
+            
             <form method="POST" class="space-y-4">
                 {% csrf_token %}
-                <input type="text" name="new_turma" placeholder="Nome da turma" class="w-full border p-2 rounded">
-                <select name="Periodo_turma" class="w-full border p-2 rounded">
-                    <option value="Diurno">Diurno</option> 
-                    <option value="Noturno">Noturno</option>
+                
+                <!-- Nome da Turma com valor preenchido em caso de edição -->
+                <input type="text" name="new_turma" placeholder="Nome da turma" required
+                       value="{% if turma_para_editar %}{{ turma_para_editar.nome }}{% endif %}"
+                       class="w-full border p-3 rounded-lg focus:border-[#1E5BB8] outline-none">
+                
+                <!-- Dropdown de período mantendo a seleção atual -->
+                <select name="Periodo_turma" required class="w-full border p-3 rounded-lg focus:border-[#1E5BB8] outline-none bg-gray-50">
+                    <option value="Diurno" {% if turma_para_editar and turma_para_editar.periodo == 'Diurno' %}selected{% endif %}>Diurno</option> 
+                    <option value="Noturno" {% if turma_para_editar and turma_para_editar.periodo == 'Noturno' %}selected{% endif %}>Noturno</option>
                 </select>
-                <div class="flex gap-2">
-                    <button type="submit" class="btn-azul flex-1 py-2">Salvar</button>
-                    <button type="button" class="bg-gray-100 px-4 rounded border border-blue-800 text-blue-800">Importar Excel</button>
+                
+                <div class="flex gap-2 pt-2">
+                    <!-- Botão de Salvar Dinâmico -->
+                    <button type="submit" class="btn-azul flex-1 py-3 shadow-md hover:scale-[1.02] transition-transform font-bold">
+                        {% if turma_para_editar %}💾 Atualizar Turma{% else %}💾 Salvar Turma{% endif %}
+                    </button>
+                    
+                    <!-- Alternância entre Cancelar e Importar Excel -->
+                    {% if turma_para_editar %}
+                    <a href="{% url 'cadastroTurma' %}" class="bg-gray-100 px-4 flex items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-200 transition-colors font-medium">
+                        ❌ Cancelar
+                    </a>
+                    {% else %}
+                    <button type="button" class="bg-gray-50 px-4 rounded border border-blue-800 text-blue-800 hover:bg-blue-50 transition-colors">
+                        Importar Excel
+                    </button>
+                    {% endif %}
                 </div>
             </form>
         </div>
 
         <div class="bg-white p-6 rounded-xl shadow-sm">
-            <h3 class="font-bold mb-4">Turmas Cadastradas Recentemente</h3>
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="text-left border-b text-gray-400">
-                        <th class="pb-2">Nome</th>
-                        <th class="pb-2">Periodo</th>
-                        <th class="pb-2">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for turma in turmas %}
-                    <tr class="border-b">
-                        <td class="py-2">{{ turma.nome }}</td>
-                        <td class="py-2">{{ turma.periodo }}</td>
-                        <td class="py-2">✏️ 🗑️</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <h3 class="font-bold mb-4 italic text-gray-600">Turmas Cadastradas Recentemente</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left border-b text-gray-400">
+                            <th class="pb-2">Nome</th>
+                            <th class="pb-2">Período</th>
+                            <th class="pb-2 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        {% for turma in turmas %}
+                        <tr class="hover:bg-gray-50 transition-colors {% if turma_para_editar.id_turma == turma.id_turma %}bg-yellow-50{% endif %}">
+                            <td class="py-3 font-medium">{{ turma.nome }}</td>
+                            <td class="py-3 text-gray-500">{{ turma.periodo }}</td>
+                            <td class="py-3 text-center flex items-center justify-center gap-3">
+                                <!-- Botão de Lápis apontando para a mesma página injetando ?editar=ID -->
+                                <a href="?editar={{ turma.id_turma }}" class="text-blue-500 hover:underline text-lg transition-transform hover:scale-110" title="Editar turma">
+                                    ✏️
+                                </a>
+                                <button class="text-red-400 hover:underline text-lg transition-transform hover:scale-110" title="Excluir turma">
+                                    🗑️
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="py-4 text-center text-gray-400 italic">Nenhuma turma cadastrada no banco local.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

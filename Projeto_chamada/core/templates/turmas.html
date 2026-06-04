@@ -32,7 +32,7 @@
     {% endfor %}
 </div>
 
-{% if user.is_authenticated %}
+{% if user.is_superuser %}
 <a href="{% url 'cadastroTurma' %}">
     <button class="fixed bottom-10 right-10 btn-azul shadow-2xl hover:scale-105 transition-transform">
         + Cadastrar Nova Turma

@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth            import authenticate, login
 from django.contrib                 import messages
 from django.http                    import JsonResponse
+from django.shortcuts               import render, redirect, get_object_or_404
 
 
 # 1. TELA DE SELEÇÃO DE TURMAS
@@ -151,6 +152,7 @@ def analises(request):
 
 
 @login_required
+@permission_required('core.view_chamada', raise_exception=True)
 def dados_dashboard(request):
     # 1. Filtros Globais recebidos via AJAX
     filtro_ano = request.GET.get('ano')
@@ -270,6 +272,13 @@ def dados_dashboard(request):
 @login_required
 @permission_required('core.add_turma', raise_exception=True)
 def cadastroTurma(request):
+    # --- NOVO: Captura o ID da turma se o usuário clicou no lápis ✏️ ---
+    turma_id_editar = request.GET.get('editar', '').strip()
+    turma_para_editar = None
+    if turma_id_editar:
+        turma_para_editar = get_object_or_404(Turma, pk=turma_id_editar)
+
+    # Lista todas as turmas cadastradas
     turmas = Turma.objects.all().order_by('-data')
 
     if request.method == 'POST':
@@ -277,23 +286,39 @@ def cadastroTurma(request):
         Periodo_turma = request.POST.get('Periodo_turma')
 
         if nome_input and Periodo_turma:
-            registro = Turma.objects.filter(nome=nome_input, periodo=Periodo_turma).count()
-            if registro == 0:
-                Turma.objects.create(
-                    nome=nome_input,
-                    periodo=Periodo_turma,
-                    data=timezone.now(),
-                    updated_at=timezone.now()
-                )
-                messages.success(request, f"Turma {nome_input} cadastrada com sucesso!")
+            if turma_para_editar:
+                # --- NOVO: Lógica de Atualização ---
+                # Verifica se o novo nome/período já não pertence a OUTRA turma para não duplicar por engano
+                duplicado = Turma.objects.filter(nome=nome_input, periodo=Periodo_turma).exclude(pk=turma_para_editar.pk).exists()
+                if not duplicado:
+                    turma_para_editar.nome = nome_input
+                    turma_para_editar.periodo = Periodo_turma
+                    turma_para_editar.updated_at = timezone.now()
+                    turma_para_editar.save()
+                    messages.success(request, f"Turma {nome_input} atualizada com sucesso!")
+                else:
+                    messages.error(request, f"Já existe outra turma cadastrada com o nome {nome_input} nesse período.")
             else:
-                messages.error(request, f"Turma {nome_input} já cadastrada anteriormente!")
+                # --- Lógica de Criação Original ---
+                registro = Turma.objects.filter(nome=nome_input, periodo=Periodo_turma).count()
+                if registro == 0:
+                    Turma.objects.create(
+                        nome=nome_input,
+                        periodo=Periodo_turma,
+                        data=timezone.now(),
+                        updated_at=timezone.now()
+                    )
+                    messages.success(request, f"Turma {nome_input} cadastrada com sucesso!")
+                else:
+                    messages.error(request, f"Turma {nome_input} já cadastrada anteriormente!")
+            
             return redirect('cadastroTurma')
         else:
             messages.error(request, "Preencha todos os campos corretamente.")
 
     return render(request, 'cadastroTurma.html', {
-        'turmas': turmas
+        'turmas': turmas,
+        'turma_para_editar': turma_para_editar  # --- NOVO: Passado para o template ---
     })
 
 # 6. CADASTRO ALUNO
@@ -303,10 +328,16 @@ def cadastroAluno(request):
     turmas = Turma.objects.all().order_by('nome')
     turma_filtrada_id = request.GET.get('id_turma', '').strip()
 
+    # --- NOVO: Captura o ID do aluno se o usuário clicou no lápis ✏️ ---
+    aluno_id_editar = request.GET.get('editar', '').strip()
+    aluno_para_editar = None
+    if aluno_id_editar:
+        aluno_para_editar = get_object_or_404(Aluno, pk=aluno_id_editar)
+
+    # Mantém a sua lógica de listagem e filtro intacta
     if turma_filtrada_id:
         alunos = Aluno.objects.filter(id_turma_id=turma_filtrada_id).order_by('-nome')
     else:
-        # Se nenhuma turma for escolhida, traz os cadastrados recentemente (ex: últimos 10)
         alunos = Aluno.objects.all().order_by('id_turma')[:10]
 
     if request.method == 'POST':
@@ -314,13 +345,21 @@ def cadastroAluno(request):
         id_turma = request.POST.get('id_turma')
 
         if nome and id_turma:
-            Aluno.objects.create(
-                nome=nome,
-                id_turma_id=id_turma,
-                data=timezone.now(),
-                updated_at=timezone.now()
-            )
-            messages.success(request, f"Aluno {nome} cadastrado com sucesso!")
+            if aluno_para_editar:
+                aluno_para_editar.nome = nome
+                aluno_para_editar.id_turma_id = id_turma
+                aluno_para_editar.updated_at = timezone.now()
+                aluno_para_editar.save()
+                messages.success(request, f"Aluno {nome} atualizado com sucesso!")
+            else:
+                Aluno.objects.create(
+                    nome=nome,
+                    id_turma_id=id_turma,
+                    data=timezone.now(),
+                    updated_at=timezone.now()
+                )
+                messages.success(request, f"Aluno {nome} cadastrado com sucesso!")
+            
             return redirect('cadastroAluno')
         else:
             messages.error(request, "Preencha todos os campos corretamente.")
@@ -328,7 +367,8 @@ def cadastroAluno(request):
     return render(request, 'cadastroAluno.html', {
         'turmas': turmas,
         'alunos': alunos,
-        'turma_filtrada_id': turma_filtrada_id
+        'turma_filtrada_id': turma_filtrada_id,
+        'aluno_para_editar': aluno_para_editar
     })
 
 # 7. TELA DE LOGIN
