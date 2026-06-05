@@ -29,8 +29,10 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = env('SECRET_KEY')
 DEBUG=(bool, False)
 
-ALLOWED_HOSTS = ['archlinux-1.tail0357fc.ts.net', '127.0.0.1', '.vercel.app']
-CSRF_TRUSTED_ORIGINS = ['https://archlinux-1.tail0357fc.ts.net','.vercel.app']
+#ALLOWED_HOSTS = ['archlinux-1.tail0357fc.ts.net', '127.0.0.1', '.vercel.app']
+ALLOWED_HOSTS = ['archlinux-1.tail0357fc.ts.net', '127.0.0.1']
+#CSRF_TRUSTED_ORIGINS = ['https://archlinux-1.tail0357fc.ts.net','.vercel.app']
+CSRF_TRUSTED_ORIGINS = ['https://archlinux-1.tail0357fc.ts.net']
 
 
 # Application definition
@@ -47,6 +49,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -140,6 +143,7 @@ USE_I18N = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 LOGOUT_REDIRECT_URL = 'login'
 
