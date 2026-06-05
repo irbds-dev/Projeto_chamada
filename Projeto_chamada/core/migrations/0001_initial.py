@@ -16,7 +16,6 @@ class Migration(migrations.Migration):
             fields=[
                 ('id_aluno', models.AutoField(primary_key=True, serialize=False)),
                 ('nome', models.CharField(max_length=255)),
-                ('cpf', models.CharField(max_length=255)),
                 ('data', models.DateTimeField()),
                 ('updated_at', models.DateTimeField()),
             ],

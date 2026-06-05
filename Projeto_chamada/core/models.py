@@ -11,7 +11,6 @@ from django.db import models
 class Aluno(models.Model):
     id_aluno = models.AutoField(primary_key=True)
     nome = models.CharField(max_length=255)
-    cpf = models.CharField(max_length=255)
     id_turma = models.ForeignKey('Turma', models.DO_NOTHING, db_column='id_turma', blank=True, null=True)
     data = models.DateTimeField()
     updated_at = models.DateTimeField()
