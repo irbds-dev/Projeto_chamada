@@ -7,7 +7,6 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div class="bg-white p-6 rounded-xl shadow-sm border-t-4 {% if aluno_para_editar %}border-yellow-500{% else %}border-[#1E5BB8]{% endif %}">
-            
             <h3 class="font-bold mb-4 italic text-gray-600">
                 {% if aluno_para_editar %}✏️ Modificando: {{ aluno_para_editar.nome }}{% else %}Novo Aluno{% endif %}
             </h3>
@@ -32,30 +31,42 @@
 
             <form method="POST" class="space-y-4">
                 {% csrf_token %}
-                
                 <input type="hidden" name="id_turma" value="{% if aluno_para_editar %}{{ aluno_para_editar.id_turma_id }}{% else %}{{ turma_filtrada_id }}{% endif %}">
 
                 <input type="text" name="nome" placeholder="Nome Completo" required
                        value="{% if aluno_para_editar %}{{ aluno_para_editar.nome }}{% endif %}"
                        class="w-full border p-3 rounded-lg focus:border-[#1E5BB8] outline-none">
 
-                <div class="flex flex-wrap gap-2 pt-2">
+                <div class="flex gap-2 pt-2">
                     <button type="submit" class="btn-azul flex-1 py-3 shadow-md hover:scale-[1.02] transition-transform font-bold">
                         {% if aluno_para_editar %}💾 Atualizar Registro{% else %}💾 Salvar Aluno{% endif %}
                     </button>
                     
                     {% if aluno_para_editar %}
-                    <a href="{% url 'cadastroAluno' %}?id_turma={{ turma_filtrada_id }}" 
-                       class="bg-gray-100 px-4 flex items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-200 transition-colors font-medium text-sm">
+                    <a href="{% url 'cadastroAluno' %}?id_turma={{ turma_filtrada_id }}" class="bg-gray-100 px-4 flex items-center justify-center rounded border border-gray-300 text-gray-600 hover:bg-gray-200 transition-colors font-medium text-sm">
                         ❌ Cancelar
                     </a>
                     {% else %}
-                    <button type="button" class="bg-gray-50 px-4 rounded border border-blue-800 text-blue-800 hover:bg-blue-50 transition-colors text-sm">
+                    <button type="button" onclick="document.getElementById('area-excel').classList.toggle('hidden')" class="bg-gray-50 px-4 rounded border border-blue-800 text-blue-800 hover:bg-blue-50 transition-colors text-sm font-medium">
                         📊 Importar Excel
                     </button>
                     {% endif %}
                 </div>
             </form>
+
+            <div id="area-excel" class="hidden mt-6 p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+                <h4 class="text-sm font-bold text-gray-700 mb-1">Importar via Planilha (.xlsx, .csv)</h4>
+                <p class="text-xs text-gray-400 mb-4">Colunas obrigatórias na planilha: <code class="bg-gray-200 px-1 rounded font-mono">nome</code> e <code class="bg-gray-200 px-1 rounded font-mono">turma</code>.</p>
+                
+                <form method="POST" action="" enctype="multipart/form-data" class="flex gap-2">
+                    {% csrf_token %}
+                    <input type="file" name="arquivo_excel" accept=".xlsx, .xls, .csv" required
+                           class="flex-1 text-xs text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#1E5BB8] hover:file:bg-blue-100 cursor-pointer">
+                    <button type="submit" name="action" value="importar_excel" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow transition-transform active:scale-95">
+                        🚀 Enviar
+                    </button>
+                </form>
+            </div>
         </div>
 
         <div class="bg-white p-6 rounded-xl shadow-sm">
@@ -76,15 +87,15 @@
                             <td class="py-3 text-gray-500 text-xs">
                                 {{ aluno.id_turma.nome }} ({{ aluno.id_turma.periodo }})
                             </td>
-                            <td class="py-3 text-center flex items-center justify-center gap-3">
-                                <a href="?editar={{ aluno.id_aluno }}&id_turma={{ turma_filtrada_id }}" 
-                                   class="text-blue-500 hover:underline text-lg transition-transform hover:scale-110" 
-                                   title="Editar aluno">
-                                    ✏️
-                                </a>
-                                <button class="text-red-400 hover:underline text-lg transition-transform hover:scale-110" title="Excluir aluno">
-                                    🗑️
-                                </button>
+                            <td class="py-3 text-center">
+                                <div class="flex items-center justify-center gap-3">
+                                    <a href="?editar={{ aluno.id_aluno }}&id_turma={{ turma_filtrada_id }}" class="text-blue-500 hover:underline text-lg transition-transform hover:scale-110" title="Editar aluno">
+                                        ✏️
+                                    </a>
+                                    <button class="text-red-400 hover:underline text-lg transition-transform hover:scale-110" title="Excluir aluno">
+                                        🗑️
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         {% empty %}
